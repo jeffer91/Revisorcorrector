@@ -197,6 +197,17 @@ function renderCriteria(rubricReview) {
   });
 }
 
+function renderExportPaths(exportPaths) {
+  const reportSummary = document.querySelector('.rc-report-preview p');
+  if (!reportSummary || !exportPaths) return;
+
+  const formats = Object.entries(exportPaths)
+    .map(([format, filePath]) => `${format}: ${filePath}`)
+    .join(' | ');
+
+  reportSummary.textContent = `Informe generado correctamente. Archivos: ${formats}`;
+}
+
 function renderInstitutionalReview(review) {
   const rubricReview = review.rubricReview;
   const peaAlignment = review.peaAlignment;
@@ -214,6 +225,7 @@ function renderInstitutionalReview(review) {
   if (reportSummary) reportSummary.textContent = rubricReview.conclusion;
 
   renderCriteria(rubricReview);
+  renderExportPaths(review.exportPaths);
 }
 
 async function selectFileForRole(role) {
@@ -280,7 +292,7 @@ function bindReviewButton() {
     }
 
     btnStartReview.disabled = true;
-    btnStartReview.textContent = 'Generando rúbrica...';
+    btnStartReview.textContent = 'Generando informe...';
     setView('analisis');
 
     try {
@@ -326,7 +338,7 @@ async function bootApp() {
 
     statusTitle.textContent = `${info.name} v${info.version}`;
     statusText.textContent = health.ok ? health.message : 'La app no respondió correctamente.';
-    appStage.textContent = info.stage || 'Bloque 7';
+    appStage.textContent = info.stage || 'Bloque 8';
   } catch (error) {
     statusTitle.textContent = 'Error de inicio';
     statusText.textContent = error.message;
