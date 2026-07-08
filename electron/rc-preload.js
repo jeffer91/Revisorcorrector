@@ -6,5 +6,6 @@ contextBridge.exposeInMainWorld('rcApi', {
   selectFiles: (options) => ipcRenderer.invoke('dialog:select-files', options),
   importDocument: (payload) => ipcRenderer.invoke('files:import-document', payload),
   getImportedFiles: () => ipcRenderer.invoke('files:get-imported'),
-  analyzePeaAlignment: () => ipcRenderer.invoke('analysis:pea-alignment')
+  analyzePeaAlignment: () => ipcRenderer.invoke('analysis:pea-alignment'),
+  runInstitutionalReview: () => ipcRenderer.invoke('analysis:institutional-review')
 });
