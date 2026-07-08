@@ -4,7 +4,7 @@ App de escritorio en modo Electron para revisar libros de asignatura y guías de
 
 ## Estado del proyecto
 
-Bloque 2 iniciado: interfaz principal creada sobre la base Electron.
+Bloque 3 iniciado: carga y lectura inicial de archivos Word, PDF y TXT.
 
 ## Objetivo general
 
@@ -22,7 +22,7 @@ Construir una app local para cargar documentos académicos grandes, extraer su c
 
 1. Base Electron y estructura del proyecto. Completado.
 2. Interfaz principal. Completado en primera versión funcional.
-3. Carga y lectura de archivos.
+3. Carga y lectura de archivos. Completado en primera versión funcional.
 4. Clasificador de documentos.
 5. Motor de estructura institucional.
 6. Motor PEA.
@@ -34,6 +34,12 @@ Construir una app local para cargar documentos académicos grandes, extraer su c
 ```bash
 npm install
 npm start
+```
+
+Para verificar módulos principales:
+
+```bash
+npm run check
 ```
 
 ## Estructura inicial
@@ -65,6 +71,16 @@ La pantalla de carga permite seleccionar:
 - PEA.
 - Rúbrica externa opcional.
 - Formato base opcional.
+
+## Lectura inicial de documentos
+
+El Bloque 3 agrega lectura local para:
+
+- `.docx` mediante Mammoth.
+- `.pdf` mediante pdf-parse.
+- `.txt` mediante lectura directa.
+
+Cada documento cargado se copia en `storage/uploads` y se guarda una extracción JSON en `storage/extracted` con texto, vista previa, conteo de palabras, encabezados detectados, referencias candidatas, figuras y tablas.
 
 ## Regla de mantenimiento
 
