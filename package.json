@@ -9,7 +9,11 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "check": "node -e \"require('./src/rc-config'); require('./src/rc-state'); console.log('Revisorcorrector OK')\""
+    "check": "node -e \"require('./src/rc-config'); require('./src/rc-state'); require('./src/rc-document-parser'); require('./src/rc-file-service'); console.log('Revisorcorrector OK')\""
+  },
+  "dependencies": {
+    "mammoth": "^1.8.0",
+    "pdf-parse": "^1.1.1"
   },
   "devDependencies": {
     "electron": "^31.7.7"
