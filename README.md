@@ -4,7 +4,7 @@ App de escritorio en modo Electron para revisar libros de asignatura y guías de
 
 ## Estado del proyecto
 
-Bloque 1 iniciado: base Electron y estructura principal del proyecto.
+Bloque 2 iniciado: interfaz principal creada sobre la base Electron.
 
 ## Objetivo general
 
@@ -20,8 +20,8 @@ Construir una app local para cargar documentos académicos grandes, extraer su c
 
 ## Bloques de desarrollo
 
-1. Base Electron y estructura del proyecto.
-2. Interfaz principal.
+1. Base Electron y estructura del proyecto. Completado.
+2. Interfaz principal. Completado en primera versión funcional.
 3. Carga y lectura de archivos.
 4. Clasificador de documentos.
 5. Motor de estructura institucional.
@@ -47,6 +47,24 @@ Revisorcorrector/
 ├─ storage/
 └─ assets/
 ```
+
+## Interfaz principal
+
+La interfaz incluye las siguientes vistas:
+
+- Inicio.
+- Carga.
+- Análisis.
+- Resultados.
+- Informe.
+- Ajustes.
+
+La pantalla de carga permite seleccionar:
+
+- Word principal del libro o guía.
+- PEA.
+- Rúbrica externa opcional.
+- Formato base opcional.
 
 ## Regla de mantenimiento
 
