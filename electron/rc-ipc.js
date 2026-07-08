@@ -1,7 +1,7 @@
 const { app, dialog, ipcMain } = require('electron');
 const { rcConfig } = require('../src/rc-config');
 const { createInitialState } = require('../src/rc-state');
-const { importAcademicDocument } = require('../src/rc-file-service');
+const { importAcademicDocument, runPeaAlignment } = require('../src/rc-file-service');
 
 const runtimeState = createInitialState();
 
@@ -22,7 +22,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle('app:health-check', () => ({
     ok: true,
-    message: 'Carga y lectura de archivos activa',
+    message: 'Motor PEA activo',
     loadedAt: runtimeState.loadedAt
   }));
 
@@ -58,6 +58,28 @@ function registerIpcHandlers() {
     ok: true,
     files: runtimeState.files
   }));
+
+  ipcMain.handle('analysis:pea-alignment', async () => {
+    try {
+      if (!runtimeState.files.mainDocument || !runtimeState.files.pea) {
+        throw new Error('Carga primero el documento principal y el PEA.');
+      }
+
+      const alignment = await runPeaAlignment({
+        mainDocument: runtimeState.files.mainDocument,
+        pea: runtimeState.files.pea
+      });
+
+      runtimeState.analysis.pea = alignment;
+
+      return {
+        ok: true,
+        alignment
+      };
+    } catch (error) {
+      return safeError(error);
+    }
+  });
 }
 
 module.exports = {
