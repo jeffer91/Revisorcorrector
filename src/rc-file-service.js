@@ -3,6 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { parseDocument } = require('./rc-document-parser');
 const { classifyDocument } = require('./rc-document-classifier');
+const { analyzeStructure } = require('./rc-structure-analyzer');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const STORAGE_ROOT = path.join(PROJECT_ROOT, 'storage');
@@ -86,6 +87,12 @@ async function importAcademicDocument({ filePath, role }) {
   const parsed = await parseDocument(uploadPath);
   const classification = classifyDocument(parsed.summary, parsed.text);
   const roleValidation = buildRoleValidation(role, classification);
+  const structureAnalysis = analyzeStructure({
+    text: parsed.text,
+    summary: parsed.summary,
+    classification,
+    role
+  });
 
   const record = {
     id: importId,
@@ -100,6 +107,7 @@ async function importAcademicDocument({ filePath, role }) {
     summary: parsed.summary,
     classification,
     roleValidation,
+    structureAnalysis,
     text: parsed.text
   };
 
@@ -117,7 +125,8 @@ async function importAcademicDocument({ filePath, role }) {
     sizeBytes: record.sizeBytes,
     summary: record.summary,
     classification: record.classification,
-    roleValidation: record.roleValidation
+    roleValidation: record.roleValidation,
+    structureAnalysis: record.structureAnalysis
   };
 }
 
