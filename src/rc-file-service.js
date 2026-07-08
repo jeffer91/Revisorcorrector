@@ -7,6 +7,7 @@ const { analyzeStructure } = require('./rc-structure-analyzer');
 const { extractPeaProfile, analyzePeaAlignment } = require('./rc-pea-analyzer');
 const { calculateRubricReview } = require('./rc-rubric-engine');
 const { buildInstitutionalReview } = require('./rc-ai-reviewer');
+const { exportReviewFiles } = require('./rc-export-service');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const STORAGE_ROOT = path.join(PROJECT_ROOT, 'storage');
@@ -199,10 +200,12 @@ async function runInstitutionalReview({ mainDocument, pea }) {
     aiReview
   };
   const reviewPath = await writeReviewRecord('institutional-review', reviewPayload);
+  const exportPaths = await exportReviewFiles(reviewPayload);
 
   return {
     ...reviewPayload,
-    reviewPath
+    reviewPath,
+    exportPaths
   };
 }
 
