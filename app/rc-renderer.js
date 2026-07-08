@@ -46,6 +46,11 @@ function getFileName(filePath) {
   return String(filePath).split(/[\\/]/).pop();
 }
 
+function getFolderPath(filePath) {
+  if (!filePath) return '';
+  return String(filePath).replace(/[\\/][^\\/]+$/, '');
+}
+
 function formatNumber(value) {
   return new Intl.NumberFormat('es-EC').format(value || 0);
 }
@@ -197,6 +202,14 @@ function renderCriteria(rubricReview) {
   });
 }
 
+function setReportButtonsEnabled(enabled) {
+  const btnOpenPdf = document.getElementById('btnOpenPdf');
+  const btnOpenReports = document.getElementById('btnOpenReports');
+
+  if (btnOpenPdf) btnOpenPdf.disabled = !enabled;
+  if (btnOpenReports) btnOpenReports.disabled = !enabled;
+}
+
 function renderExportPaths(exportPaths) {
   const reportSummary = document.querySelector('.rc-report-preview p');
   if (!reportSummary || !exportPaths) return;
@@ -206,6 +219,7 @@ function renderExportPaths(exportPaths) {
     .join(' | ');
 
   reportSummary.textContent = `Informe generado correctamente. Archivos: ${formats}`;
+  setReportButtonsEnabled(Boolean(exportPaths.pdf || exportPaths.html));
 }
 
 function renderInstitutionalReview(review) {
@@ -243,6 +257,7 @@ async function selectFileForRole(role) {
   const filePath = result.files[0];
   appState.peaAlignment = null;
   appState.institutionalReview = null;
+  setReportButtonsEnabled(false);
   updateFileUi(role, `Leyendo, clasificando y revisando estructura de ${getFileName(filePath)}...`);
 
   try {
@@ -280,6 +295,27 @@ function bindModeButtons() {
   document.querySelectorAll('[data-mode]').forEach((button) => {
     button.addEventListener('click', () => updateMode(button.dataset.mode));
   });
+}
+
+function bindReportButtons() {
+  const btnOpenPdf = document.getElementById('btnOpenPdf');
+  const btnOpenReports = document.getElementById('btnOpenReports');
+
+  if (btnOpenPdf) {
+    btnOpenPdf.addEventListener('click', async () => {
+      const paths = appState.institutionalReview ? appState.institutionalReview.exportPaths : null;
+      const target = paths ? paths.pdf || paths.html : null;
+      if (target) await window.rcApi.openPath(target);
+    });
+  }
+
+  if (btnOpenReports) {
+    btnOpenReports.addEventListener('click', async () => {
+      const paths = appState.institutionalReview ? appState.institutionalReview.exportPaths : null;
+      const target = paths ? getFolderPath(paths.pdf || paths.html || paths.json || '') : null;
+      if (target) await window.rcApi.openPath(target);
+    });
+  }
 }
 
 function bindReviewButton() {
@@ -325,7 +361,9 @@ async function bootApp() {
   bindNavigation();
   bindFileButtons();
   bindModeButtons();
+  bindReportButtons();
   bindReviewButton();
+  setReportButtonsEnabled(false);
   updateMode(appState.mode);
   updateMetrics();
   updateProgress();
@@ -338,7 +376,7 @@ async function bootApp() {
 
     statusTitle.textContent = `${info.name} v${info.version}`;
     statusText.textContent = health.ok ? health.message : 'La app no respondió correctamente.';
-    appStage.textContent = info.stage || 'Bloque 8';
+    appStage.textContent = info.stage || 'Bloque 9';
   } catch (error) {
     statusTitle.textContent = 'Error de inicio';
     statusText.textContent = error.message;
