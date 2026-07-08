@@ -1,4 +1,6 @@
-const { app, dialog, ipcMain } = require('electron');
+const fs = require('fs/promises');
+const path = require('path');
+const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const { rcConfig } = require('../src/rc-config');
 const { createInitialState } = require('../src/rc-state');
 const { importAcademicDocument, runPeaAlignment, runInstitutionalReview } = require('../src/rc-file-service');
@@ -12,6 +14,42 @@ function safeError(error) {
   };
 }
 
+async function exportHtmlToPdf(htmlPath) {
+  if (!htmlPath) return null;
+
+  const pdfPath = htmlPath.replace(/\.html$/i, '.pdf');
+  const pdfWindow = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      sandbox: true,
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  try {
+    await pdfWindow.loadFile(htmlPath);
+    const pdfBuffer = await pdfWindow.webContents.printToPDF({
+      printBackground: true,
+      pageSize: 'A4',
+      margins: {
+        marginType: 'custom',
+        top: 0.6,
+        bottom: 0.6,
+        left: 0.6,
+        right: 0.6
+      }
+    });
+
+    await fs.writeFile(pdfPath, pdfBuffer);
+    return pdfPath;
+  } finally {
+    if (!pdfWindow.isDestroyed()) {
+      pdfWindow.destroy();
+    }
+  }
+}
+
 function registerIpcHandlers() {
   ipcMain.handle('app:get-info', () => ({
     name: rcConfig.appName,
@@ -22,7 +60,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle('app:health-check', () => ({
     ok: true,
-    message: 'Motor IA y rúbrica activo',
+    message: 'Exportación PDF real activa',
     loadedAt: runtimeState.loadedAt
   }));
 
@@ -59,6 +97,17 @@ function registerIpcHandlers() {
     files: runtimeState.files
   }));
 
+  ipcMain.handle('files:open-path', async (_event, filePath) => {
+    try {
+      if (!filePath) throw new Error('No se recibió una ruta para abrir.');
+      const result = await shell.openPath(filePath);
+      if (result) throw new Error(result);
+      return { ok: true };
+    } catch (error) {
+      return safeError(error);
+    }
+  });
+
   ipcMain.handle('analysis:pea-alignment', async () => {
     try {
       if (!runtimeState.files.mainDocument || !runtimeState.files.pea) {
@@ -91,6 +140,10 @@ function registerIpcHandlers() {
         mainDocument: runtimeState.files.mainDocument,
         pea: runtimeState.files.pea
       });
+
+      if (review.exportPaths && review.exportPaths.html) {
+        review.exportPaths.pdf = await exportHtmlToPdf(review.exportPaths.html);
+      }
 
       runtimeState.analysis.report = review;
       runtimeState.analysis.pea = review.peaAlignment;
