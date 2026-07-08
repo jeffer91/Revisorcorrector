@@ -12,7 +12,6 @@ const fileRoleConfig = {
   mainDocument: {
     title: 'Seleccionar libro o guía en Word',
     emptyText: 'Sin archivo seleccionado.',
-    loadedMetric: 'Cargado',
     filters: [
       { name: 'Word', extensions: ['docx'] }
     ]
@@ -20,7 +19,6 @@ const fileRoleConfig = {
   pea: {
     title: 'Seleccionar PEA',
     emptyText: 'Sin archivo seleccionado.',
-    loadedMetric: 'Cargado',
     filters: [
       { name: 'PEA en Word o PDF', extensions: ['docx', 'pdf'] }
     ]
@@ -28,7 +26,6 @@ const fileRoleConfig = {
   rubric: {
     title: 'Seleccionar rúbrica',
     emptyText: 'Usando rúbrica interna.',
-    loadedMetric: 'Externa',
     filters: [
       { name: 'Rúbrica en Word o PDF', extensions: ['docx', 'pdf'] }
     ]
@@ -36,7 +33,6 @@ const fileRoleConfig = {
   formatBase: {
     title: 'Seleccionar formato base',
     emptyText: 'Usando formato interno.',
-    loadedMetric: 'Externo',
     filters: [
       { name: 'Formato en Word o PDF', extensions: ['docx', 'pdf'] }
     ]
@@ -45,7 +41,26 @@ const fileRoleConfig = {
 
 function getFileName(filePath) {
   if (!filePath) return '';
-  return filePath.split(/[\\/]/).pop();
+  return String(filePath).split(/[\\/]/).pop();
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat('es-EC').format(value || 0);
+}
+
+function getDocumentLabel(document) {
+  if (!document) return '';
+  return document.originalName || getFileName(document.sourcePath || document.uploadPath || '');
+}
+
+function getDocumentSummaryLine(document, emptyText) {
+  if (!document) return emptyText;
+
+  const stats = document.summary && document.summary.stats ? document.summary.stats : {};
+  const headingCount = document.summary && document.summary.headings ? document.summary.headings.length : 0;
+  const pageText = document.summary && document.summary.pageCount ? ` · ${document.summary.pageCount} páginas` : '';
+
+  return `${getDocumentLabel(document)} · ${formatNumber(stats.wordCount)} palabras · ${headingCount} secciones${pageText}`;
 }
 
 function setView(viewName) {
@@ -63,19 +78,20 @@ function setView(viewName) {
   }
 }
 
-function updateFileUi(role) {
+function updateFileUi(role, temporaryText = null, isError = false) {
   const config = fileRoleConfig[role];
-  const filePath = appState.files[role];
+  const documentRecord = appState.files[role];
   const textElement = document.getElementById(`file-${role}`);
   const cardElement = document.querySelector(`[data-role-card="${role}"]`);
 
   if (textElement) {
-    textElement.textContent = filePath ? getFileName(filePath) : config.emptyText;
-    textElement.title = filePath || '';
+    textElement.textContent = temporaryText || getDocumentSummaryLine(documentRecord, config.emptyText);
+    textElement.title = documentRecord ? documentRecord.sourcePath : '';
   }
 
   if (cardElement) {
-    cardElement.classList.toggle('has-file', Boolean(filePath));
+    cardElement.classList.toggle('has-file', Boolean(documentRecord));
+    cardElement.classList.toggle('has-error', Boolean(isError));
   }
 }
 
@@ -99,10 +115,12 @@ function updateProgress() {
   const progressText = document.getElementById('progressText');
   const progressBar = document.getElementById('progressBar');
   const stepUpload = document.getElementById('stepUpload');
+  const stepParse = document.getElementById('stepParse');
 
   progressText.textContent = `${percent}%`;
   progressBar.style.width = `${percent}%`;
   stepUpload.classList.toggle('is-complete', requiredLoaded);
+  stepParse.classList.toggle('is-ready', Boolean(appState.files.mainDocument || appState.files.pea));
 }
 
 function updateMode(mode) {
@@ -134,10 +152,26 @@ async function selectFileForRole(role) {
     return;
   }
 
-  appState.files[role] = result.files[0];
-  updateFileUi(role);
-  updateMetrics();
-  updateProgress();
+  const filePath = result.files[0];
+  updateFileUi(role, `Leyendo ${getFileName(filePath)}...`);
+
+  try {
+    const imported = await window.rcApi.importDocument({ filePath, role });
+
+    if (!imported.ok) {
+      throw new Error(imported.message || 'No se pudo importar el documento.');
+    }
+
+    appState.files[role] = imported.document;
+    updateFileUi(role);
+    updateMetrics();
+    updateProgress();
+  } catch (error) {
+    appState.files[role] = null;
+    updateFileUi(role, `Error: ${error.message}`, true);
+    updateMetrics();
+    updateProgress();
+  }
 }
 
 function bindNavigation() {
@@ -188,7 +222,7 @@ async function bootApp() {
 
     statusTitle.textContent = `${info.name} v${info.version}`;
     statusText.textContent = health.ok ? health.message : 'La app no respondió correctamente.';
-    appStage.textContent = info.stage || 'Bloque 2';
+    appStage.textContent = info.stage || 'Bloque 3';
   } catch (error) {
     statusTitle.textContent = 'Error de inicio';
     statusText.textContent = error.message;
