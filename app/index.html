@@ -7,53 +7,279 @@
   <link rel="stylesheet" href="./rc-styles.css" />
 </head>
 <body>
-  <main class="rc-shell">
-    <section class="rc-hero">
-      <div>
-        <p class="rc-eyebrow">Bloque 1 · Base Electron</p>
-        <h1>Revisorcorrector</h1>
-        <p class="rc-subtitle">
-          App para revisar libros de asignatura y guías de formación práctica con formato institucional, rúbrica, PEA y apoyo de IA.
-        </p>
+  <div class="rc-app">
+    <aside class="rc-sidebar" aria-label="Navegación principal">
+      <div class="rc-brand">
+        <div class="rc-brand-mark">RC</div>
+        <div>
+          <strong>Revisorcorrector</strong>
+          <span id="appStage">Bloque 2</span>
+        </div>
       </div>
-      <div class="rc-status-card">
+
+      <nav class="rc-nav">
+        <button class="rc-nav-item is-active" type="button" data-view="inicio">Inicio</button>
+        <button class="rc-nav-item" type="button" data-view="carga">Carga</button>
+        <button class="rc-nav-item" type="button" data-view="analisis">Análisis</button>
+        <button class="rc-nav-item" type="button" data-view="resultados">Resultados</button>
+        <button class="rc-nav-item" type="button" data-view="informe">Informe</button>
+        <button class="rc-nav-item" type="button" data-view="ajustes">Ajustes</button>
+      </nav>
+
+      <div class="rc-sidebar-footer">
         <span class="rc-status-dot"></span>
         <div>
           <strong id="rcStatusTitle">Iniciando...</strong>
-          <p id="rcStatusText">Verificando conexión interna.</p>
+          <p id="rcStatusText">Verificando app.</p>
         </div>
       </div>
-    </section>
+    </aside>
 
-    <section class="rc-grid">
-      <article class="rc-panel">
-        <h2>1. Carga</h2>
-        <p>En los siguientes bloques se habilitará la carga de Word, PDF, PEA, rúbricas y formatos base.</p>
-        <button id="btnSelectFile" type="button">Probar selector de archivo</button>
-        <p id="selectedFile" class="rc-muted">Sin archivo seleccionado.</p>
-      </article>
+    <main class="rc-main">
+      <header class="rc-topbar">
+        <div>
+          <p class="rc-eyebrow">App académica de revisión institucional</p>
+          <h1 id="pageTitle">Inicio</h1>
+        </div>
+        <div class="rc-topbar-actions">
+          <span class="rc-pill" id="selectedModeLabel">Modo experto</span>
+          <button class="rc-primary" id="btnStartReview" type="button">Preparar revisión</button>
+        </div>
+      </header>
 
-      <article class="rc-panel">
-        <h2>2. Análisis</h2>
-        <p>La app preparará el documento por bloques para revisar estructura, PEA, APA 7, didáctica y rúbrica.</p>
-        <ul>
-          <li>Libro de asignatura</li>
-          <li>Guía de formación práctica</li>
-          <li>PEA y rúbricas</li>
-        </ul>
-      </article>
+      <section id="view-inicio" class="rc-view is-active" data-title="Inicio">
+        <div class="rc-hero-card">
+          <div>
+            <p class="rc-eyebrow">Bloque 2 · Interfaz principal</p>
+            <h2>Revisión fuerte de libros, guías y PEA</h2>
+            <p>
+              Esta pantalla deja listo el flujo principal: carga de documentos, preparación del análisis, visualización de resultados, informe y ajustes.
+            </p>
+          </div>
+          <div class="rc-score-preview">
+            <span>Estado</span>
+            <strong>Base lista</strong>
+            <small>Los motores se conectarán en los siguientes bloques.</small>
+          </div>
+        </div>
 
-      <article class="rc-panel">
-        <h2>3. Resultados</h2>
-        <p>Se mostrarán observaciones por criterio, puntaje sugerido y estado final de aprobación.</p>
-      </article>
+        <div class="rc-grid rc-grid-4">
+          <article class="rc-metric-card">
+            <span>Documento principal</span>
+            <strong id="metricMainDoc">Pendiente</strong>
+          </article>
+          <article class="rc-metric-card">
+            <span>PEA</span>
+            <strong id="metricPea">Pendiente</strong>
+          </article>
+          <article class="rc-metric-card">
+            <span>Rúbrica</span>
+            <strong id="metricRubric">Interna</strong>
+          </article>
+          <article class="rc-metric-card">
+            <span>Formato base</span>
+            <strong id="metricFormat">Interno</strong>
+          </article>
+        </div>
 
-      <article class="rc-panel">
-        <h2>4. Informe</h2>
-        <p>El informe final se exportará en Word, PDF y JSON técnico cuando se completen los bloques posteriores.</p>
-      </article>
-    </section>
-  </main>
+        <div class="rc-grid rc-grid-3">
+          <article class="rc-panel">
+            <h3>1. Cargar</h3>
+            <p>Selecciona el Word del libro o guía, el PEA y los documentos institucionales de apoyo.</p>
+          </article>
+          <article class="rc-panel">
+            <h3>2. Analizar</h3>
+            <p>La app dividirá el documento y preparará criterios de estructura, rúbrica, APA 7 y alineación al PEA.</p>
+          </article>
+          <article class="rc-panel">
+            <h3>3. Exportar</h3>
+            <p>El resultado final se organizará como informe formal con puntaje y observaciones accionables.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-carga" class="rc-view" data-title="Carga de documentos">
+        <div class="rc-section-head">
+          <div>
+            <h2>Carga de documentos</h2>
+            <p>En este bloque la interfaz queda lista. La lectura real se conectará en el Bloque 3.</p>
+          </div>
+          <div class="rc-segmented" role="group" aria-label="Modo de revisión">
+            <button class="is-active" type="button" data-mode="experto">Experto</button>
+            <button type="button" data-mode="completo">Completo</button>
+            <button type="button" data-mode="rapido">Rápido</button>
+          </div>
+        </div>
+
+        <div class="rc-upload-grid">
+          <article class="rc-upload-card" data-role-card="mainDocument">
+            <div>
+              <span class="rc-card-label">Obligatorio</span>
+              <h3>Word del libro o guía</h3>
+              <p>Carga principal que será revisada por estructura, rúbrica, PEA, APA y coherencia didáctica.</p>
+            </div>
+            <button type="button" data-file-role="mainDocument">Seleccionar Word</button>
+            <small id="file-mainDocument">Sin archivo seleccionado.</small>
+          </article>
+
+          <article class="rc-upload-card" data-role-card="pea">
+            <div>
+              <span class="rc-card-label">Muy importante</span>
+              <h3>PEA de la asignatura</h3>
+              <p>Base académica para validar contenidos, resultados de aprendizaje, actividades y evaluación.</p>
+            </div>
+            <button type="button" data-file-role="pea">Seleccionar PEA</button>
+            <small id="file-pea">Sin archivo seleccionado.</small>
+          </article>
+
+          <article class="rc-upload-card" data-role-card="rubric">
+            <div>
+              <span class="rc-card-label">Opcional</span>
+              <h3>Rúbrica externa</h3>
+              <p>Permite cargar una rúbrica aplicada o institucional. Si no se carga, se usa la rúbrica interna.</p>
+            </div>
+            <button type="button" data-file-role="rubric">Seleccionar rúbrica</button>
+            <small id="file-rubric">Usando rúbrica interna.</small>
+          </article>
+
+          <article class="rc-upload-card" data-role-card="formatBase">
+            <div>
+              <span class="rc-card-label">Opcional</span>
+              <h3>Formato base</h3>
+              <p>Permite comparar contra un formato oficial adicional. Si no se carga, se usan reglas internas.</p>
+            </div>
+            <button type="button" data-file-role="formatBase">Seleccionar formato</button>
+            <small id="file-formatBase">Usando formato interno.</small>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-analisis" class="rc-view" data-title="Análisis">
+        <div class="rc-section-head">
+          <div>
+            <h2>Preparación del análisis</h2>
+            <p>Vista de control para el flujo de revisión. En los siguientes bloques se conectarán los motores reales.</p>
+          </div>
+          <span class="rc-pill">Pendiente de Bloques 3 a 7</span>
+        </div>
+
+        <div class="rc-progress-card">
+          <div class="rc-progress-head">
+            <strong>Progreso de preparación</strong>
+            <span id="progressText">0%</span>
+          </div>
+          <div class="rc-progress-track">
+            <div id="progressBar" class="rc-progress-bar"></div>
+          </div>
+        </div>
+
+        <div class="rc-timeline">
+          <article class="rc-step is-ready" id="stepUpload">
+            <span>1</span>
+            <div>
+              <h3>Carga de archivos</h3>
+              <p>Documento principal, PEA, rúbrica y formato base.</p>
+            </div>
+          </article>
+          <article class="rc-step" id="stepParse">
+            <span>2</span>
+            <div>
+              <h3>Lectura del documento</h3>
+              <p>Extracción de texto, títulos, secciones, tablas, figuras y referencias.</p>
+            </div>
+          </article>
+          <article class="rc-step" id="stepClassify">
+            <span>3</span>
+            <div>
+              <h3>Clasificación</h3>
+              <p>Detección automática de libro, guía, PEA o rúbrica.</p>
+            </div>
+          </article>
+          <article class="rc-step" id="stepReview">
+            <span>4</span>
+            <div>
+              <h3>Revisión institucional</h3>
+              <p>Estructura, PEA, rúbrica, APA 7, didáctica y redacción.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-resultados" class="rc-view" data-title="Resultados">
+        <div class="rc-section-head">
+          <div>
+            <h2>Resultados de revisión</h2>
+            <p>Plantilla visual para mostrar puntajes, riesgos y observaciones por criterio.</p>
+          </div>
+          <span class="rc-pill rc-pill-warning">Sin análisis ejecutado</span>
+        </div>
+
+        <div class="rc-results-layout">
+          <article class="rc-total-card">
+            <span>Puntaje estimado</span>
+            <strong>-- / 30</strong>
+            <p>El puntaje se calculará con el motor de rúbrica.</p>
+          </article>
+          <div class="rc-criteria-list" id="criteriaList">
+            <article><strong>A</strong><span>Formato institucional</span><em>Pendiente</em></article>
+            <article><strong>B</strong><span>Alineación al PEA</span><em>Pendiente</em></article>
+            <article><strong>C</strong><span>Escritura y edición</span><em>Pendiente</em></article>
+            <article><strong>D</strong><span>Didáctica</span><em>Pendiente</em></article>
+            <article><strong>E</strong><span>Recursos y originalidad</span><em>Pendiente</em></article>
+            <article><strong>F</strong><span>APA 7 y referencias</span><em>Pendiente</em></article>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-informe" class="rc-view" data-title="Informe">
+        <div class="rc-section-head">
+          <div>
+            <h2>Informe formal</h2>
+            <p>Vista preparada para generar reportes en Word, PDF y JSON técnico.</p>
+          </div>
+          <div class="rc-topbar-actions">
+            <button type="button" disabled>Exportar Word</button>
+            <button type="button" disabled>Exportar PDF</button>
+          </div>
+        </div>
+
+        <article class="rc-report-preview">
+          <h3>Resumen ejecutivo</h3>
+          <p>Cuando se conecten los motores, aquí aparecerá el resumen del documento, estado final, observaciones generales y recomendaciones priorizadas.</p>
+          <div class="rc-report-box">
+            <strong>Estado final:</strong>
+            <span>No disponible todavía.</span>
+          </div>
+        </article>
+      </section>
+
+      <section id="view-ajustes" class="rc-view" data-title="Ajustes">
+        <div class="rc-section-head">
+          <div>
+            <h2>Ajustes</h2>
+            <p>Configuración base para mantener la app potente, ordenada y fácil de mantener.</p>
+          </div>
+        </div>
+
+        <div class="rc-grid rc-grid-2">
+          <article class="rc-panel">
+            <h3>Reglas de mantenimiento</h3>
+            <ul>
+              <li>Archivos compactos, sin superar aproximadamente 700 líneas.</li>
+              <li>Prompts, rúbricas y reglas fuera del código principal.</li>
+              <li>Separación entre interfaz, Electron y motores académicos.</li>
+            </ul>
+          </article>
+          <article class="rc-panel">
+            <h3>Modos de revisión</h3>
+            <p><strong>Experto:</strong> revisión profunda con PEA, rúbrica, APA y coherencia didáctica.</p>
+            <p><strong>Completo:</strong> revisión institucional general.</p>
+            <p><strong>Rápido:</strong> revisión básica de estructura y faltantes.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <script src="./rc-renderer.js"></script>
 </body>
