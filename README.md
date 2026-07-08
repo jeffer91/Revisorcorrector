@@ -4,7 +4,7 @@ App de escritorio en modo Electron para revisar libros de asignatura y guías de
 
 ## Estado del proyecto
 
-Bloque 4 iniciado: clasificador automático de documentos conectado a la carga.
+Bloque 5 iniciado: motor de estructura institucional conectado a la carga de documentos.
 
 ## Objetivo general
 
@@ -24,7 +24,7 @@ Construir una app local para cargar documentos académicos grandes, extraer su c
 2. Interfaz principal. Completado en primera versión funcional.
 3. Carga y lectura de archivos. Completado en primera versión funcional.
 4. Clasificador de documentos. Completado en primera versión funcional.
-5. Motor de estructura institucional.
+5. Motor de estructura institucional. Completado en primera versión funcional.
 6. Motor PEA.
 7. Motor IA y rúbrica.
 8. Reportes, exportación y prueba real.
@@ -94,6 +94,20 @@ El Bloque 4 agrega clasificación automática por patrones académicos. La app i
 - Documento desconocido.
 
 La clasificación devuelve tipo detectado, porcentaje de confianza, evidencias y validación contra el rol de carga elegido por el usuario.
+
+## Motor de estructura institucional
+
+El Bloque 5 agrega revisión estructural automática para libros y guías. El motor puede detectar:
+
+- Secciones obligatorias faltantes.
+- Secciones vacías o débiles.
+- Unidades incompletas.
+- Talleres incompletos.
+- Proyecto Final incompleto.
+- Referencias insuficientes.
+- Glosario insuficiente.
+- Duplicados de figuras y tablas.
+- Riesgo estructural y puntaje interno sobre 100.
 
 ## Regla de mantenimiento
 
