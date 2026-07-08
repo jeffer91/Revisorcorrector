@@ -1,6 +1,6 @@
 const rcConfig = {
   appName: 'Revisorcorrector',
-  stage: 'bloque-01-base-electron',
+  stage: 'bloque-03-carga-lectura-archivos',
   window: {
     width: 1280,
     height: 820,
@@ -15,6 +15,7 @@ const rcConfig = {
     'formato_base',
     'desconocido'
   ],
+  supportedExtensions: ['docx', 'pdf', 'txt'],
   fileFilters: {
     allSupported: [
       { name: 'Documentos académicos', extensions: ['docx', 'pdf', 'txt'] },
