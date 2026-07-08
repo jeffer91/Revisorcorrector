@@ -4,7 +4,7 @@ App de escritorio en modo Electron para revisar libros de asignatura y guías de
 
 ## Estado del proyecto
 
-Bloque 8 iniciado: reportes y exportación local conectados a la revisión institucional.
+Bloque 9 iniciado: exportación PDF real desde Electron y apertura directa de reportes locales.
 
 ## Objetivo general
 
@@ -28,6 +28,7 @@ Construir una app local para cargar documentos académicos grandes, extraer su c
 6. Motor PEA. Completado en primera versión funcional.
 7. Motor IA y rúbrica. Completado en primera versión funcional.
 8. Reportes, exportación y prueba real. Completado en primera versión funcional.
+9. PDF real y apertura de reportes. Completado en primera versión funcional.
 
 ## Ejecutar en desarrollo
 
@@ -151,6 +152,15 @@ El Bloque 8 genera reportes locales después de la revisión institucional. La a
 - DOC compatible con Word basado en HTML.
 
 Además, mantiene el respaldo completo de la revisión en `storage/reviews`.
+
+## PDF real y apertura de reportes
+
+El Bloque 9 agrega generación de PDF real usando `webContents.printToPDF` de Electron. Después de preparar la revisión, la app genera también un `.pdf` en `storage/reports`.
+
+En la vista Informe se habilitan botones para:
+
+- Abrir PDF.
+- Abrir carpeta de reportes.
 
 ## Regla de mantenimiento
 
