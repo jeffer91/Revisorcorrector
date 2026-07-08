@@ -53,14 +53,21 @@ function getDocumentLabel(document) {
   return document.originalName || getFileName(document.sourcePath || document.uploadPath || '');
 }
 
+function getClassificationText(document) {
+  if (!document || !document.classification) return 'Sin clasificar';
+  const percent = Math.round((document.classification.confidence || 0) * 100);
+  return `${document.classification.label} (${percent}%)`;
+}
+
 function getDocumentSummaryLine(document, emptyText) {
   if (!document) return emptyText;
 
   const stats = document.summary && document.summary.stats ? document.summary.stats : {};
   const headingCount = document.summary && document.summary.headings ? document.summary.headings.length : 0;
   const pageText = document.summary && document.summary.pageCount ? ` · ${document.summary.pageCount} páginas` : '';
+  const classificationText = getClassificationText(document);
 
-  return `${getDocumentLabel(document)} · ${formatNumber(stats.wordCount)} palabras · ${headingCount} secciones${pageText}`;
+  return `${getDocumentLabel(document)} · ${classificationText} · ${formatNumber(stats.wordCount)} palabras · ${headingCount} secciones${pageText}`;
 }
 
 function setView(viewName) {
@@ -91,7 +98,7 @@ function updateFileUi(role, temporaryText = null, isError = false) {
 
   if (cardElement) {
     cardElement.classList.toggle('has-file', Boolean(documentRecord));
-    cardElement.classList.toggle('has-error', Boolean(isError));
+    cardElement.classList.toggle('has-error', Boolean(isError || (documentRecord && documentRecord.roleValidation && !documentRecord.roleValidation.isExpected)));
   }
 }
 
@@ -101,26 +108,31 @@ function updateMetrics() {
   const metricRubric = document.getElementById('metricRubric');
   const metricFormat = document.getElementById('metricFormat');
 
-  metricMainDoc.textContent = appState.files.mainDocument ? 'Cargado' : 'Pendiente';
-  metricPea.textContent = appState.files.pea ? 'Cargado' : 'Pendiente';
-  metricRubric.textContent = appState.files.rubric ? 'Externa' : 'Interna';
-  metricFormat.textContent = appState.files.formatBase ? 'Externo' : 'Interno';
+  metricMainDoc.textContent = appState.files.mainDocument ? appState.files.mainDocument.classification.label : 'Pendiente';
+  metricPea.textContent = appState.files.pea ? appState.files.pea.classification.label : 'Pendiente';
+  metricRubric.textContent = appState.files.rubric ? appState.files.rubric.classification.label : 'Interna';
+  metricFormat.textContent = appState.files.formatBase ? appState.files.formatBase.classification.label : 'Interno';
 }
 
 function updateProgress() {
   const requiredLoaded = Boolean(appState.files.mainDocument && appState.files.pea);
   const optionalLoaded = Number(Boolean(appState.files.rubric)) + Number(Boolean(appState.files.formatBase));
   const percent = requiredLoaded ? Math.min(100, 60 + optionalLoaded * 20) : appState.files.mainDocument || appState.files.pea ? 30 : 0;
+  const classifiedCount = Object.values(appState.files).filter((item) => item && item.classification).length;
 
   const progressText = document.getElementById('progressText');
   const progressBar = document.getElementById('progressBar');
   const stepUpload = document.getElementById('stepUpload');
   const stepParse = document.getElementById('stepParse');
+  const stepClassify = document.getElementById('stepClassify');
 
   progressText.textContent = `${percent}%`;
   progressBar.style.width = `${percent}%`;
   stepUpload.classList.toggle('is-complete', requiredLoaded);
   stepParse.classList.toggle('is-ready', Boolean(appState.files.mainDocument || appState.files.pea));
+  stepParse.classList.toggle('is-complete', classifiedCount > 0);
+  stepClassify.classList.toggle('is-ready', classifiedCount > 0);
+  stepClassify.classList.toggle('is-complete', classifiedCount > 0);
 }
 
 function updateMode(mode) {
@@ -153,7 +165,7 @@ async function selectFileForRole(role) {
   }
 
   const filePath = result.files[0];
-  updateFileUi(role, `Leyendo ${getFileName(filePath)}...`);
+  updateFileUi(role, `Leyendo y clasificando ${getFileName(filePath)}...`);
 
   try {
     const imported = await window.rcApi.importDocument({ filePath, role });
@@ -222,7 +234,7 @@ async function bootApp() {
 
     statusTitle.textContent = `${info.name} v${info.version}`;
     statusText.textContent = health.ok ? health.message : 'La app no respondió correctamente.';
-    appStage.textContent = info.stage || 'Bloque 3';
+    appStage.textContent = info.stage || 'Bloque 4';
   } catch (error) {
     statusTitle.textContent = 'Error de inicio';
     statusText.textContent = error.message;
