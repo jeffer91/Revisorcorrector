@@ -1,8 +1,16 @@
 const { app, dialog, ipcMain } = require('electron');
 const { rcConfig } = require('../src/rc-config');
 const { createInitialState } = require('../src/rc-state');
+const { importAcademicDocument } = require('../src/rc-file-service');
 
 const runtimeState = createInitialState();
+
+function safeError(error) {
+  return {
+    ok: false,
+    message: error && error.message ? error.message : 'Error desconocido.'
+  };
+}
 
 function registerIpcHandlers() {
   ipcMain.handle('app:get-info', () => ({
@@ -14,7 +22,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle('app:health-check', () => ({
     ok: true,
-    message: 'Base Electron activa',
+    message: 'Carga y lectura de archivos activa',
     loadedAt: runtimeState.loadedAt
   }));
 
@@ -31,6 +39,25 @@ function registerIpcHandlers() {
 
     return { canceled: false, files: result.filePaths };
   });
+
+  ipcMain.handle('files:import-document', async (_event, payload = {}) => {
+    try {
+      const document = await importAcademicDocument(payload);
+      runtimeState.files[payload.role] = document;
+
+      return {
+        ok: true,
+        document
+      };
+    } catch (error) {
+      return safeError(error);
+    }
+  });
+
+  ipcMain.handle('files:get-imported', () => ({
+    ok: true,
+    files: runtimeState.files
+  }));
 }
 
 module.exports = {
