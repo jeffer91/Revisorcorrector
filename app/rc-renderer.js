@@ -59,6 +59,16 @@ function getClassificationText(document) {
   return `${document.classification.label} (${percent}%)`;
 }
 
+function getStructureText(document) {
+  if (!document || !document.structureAnalysis) return 'estructura pendiente';
+
+  const analysis = document.structureAnalysis;
+  if (!analysis.applies) return 'estructura: no aplica';
+
+  const issueSummary = analysis.issueSummary || { total: 0 };
+  return `estructura: ${analysis.score}/100 · ${issueSummary.total} alertas · riesgo ${analysis.risk}`;
+}
+
 function getDocumentSummaryLine(document, emptyText) {
   if (!document) return emptyText;
 
@@ -66,8 +76,9 @@ function getDocumentSummaryLine(document, emptyText) {
   const headingCount = document.summary && document.summary.headings ? document.summary.headings.length : 0;
   const pageText = document.summary && document.summary.pageCount ? ` · ${document.summary.pageCount} páginas` : '';
   const classificationText = getClassificationText(document);
+  const structureText = getStructureText(document);
 
-  return `${getDocumentLabel(document)} · ${classificationText} · ${formatNumber(stats.wordCount)} palabras · ${headingCount} secciones${pageText}`;
+  return `${getDocumentLabel(document)} · ${classificationText} · ${structureText} · ${formatNumber(stats.wordCount)} palabras · ${headingCount} secciones${pageText}`;
 }
 
 function setView(viewName) {
@@ -85,6 +96,13 @@ function setView(viewName) {
   }
 }
 
+function documentHasRisk(document) {
+  if (!document) return false;
+  const invalidRole = document.roleValidation && !document.roleValidation.isExpected;
+  const structureRisk = document.structureAnalysis && ['alto', 'medio'].includes(document.structureAnalysis.risk);
+  return Boolean(invalidRole || structureRisk);
+}
+
 function updateFileUi(role, temporaryText = null, isError = false) {
   const config = fileRoleConfig[role];
   const documentRecord = appState.files[role];
@@ -98,8 +116,14 @@ function updateFileUi(role, temporaryText = null, isError = false) {
 
   if (cardElement) {
     cardElement.classList.toggle('has-file', Boolean(documentRecord));
-    cardElement.classList.toggle('has-error', Boolean(isError || (documentRecord && documentRecord.roleValidation && !documentRecord.roleValidation.isExpected)));
+    cardElement.classList.toggle('has-error', Boolean(isError || documentHasRisk(documentRecord)));
   }
+}
+
+function getMetricLabel(document, fallback) {
+  if (!document) return fallback;
+  if (!document.structureAnalysis || !document.structureAnalysis.applies) return document.classification.label;
+  return `${document.classification.label} · ${document.structureAnalysis.score}/100`;
 }
 
 function updateMetrics() {
@@ -108,10 +132,10 @@ function updateMetrics() {
   const metricRubric = document.getElementById('metricRubric');
   const metricFormat = document.getElementById('metricFormat');
 
-  metricMainDoc.textContent = appState.files.mainDocument ? appState.files.mainDocument.classification.label : 'Pendiente';
-  metricPea.textContent = appState.files.pea ? appState.files.pea.classification.label : 'Pendiente';
-  metricRubric.textContent = appState.files.rubric ? appState.files.rubric.classification.label : 'Interna';
-  metricFormat.textContent = appState.files.formatBase ? appState.files.formatBase.classification.label : 'Interno';
+  metricMainDoc.textContent = getMetricLabel(appState.files.mainDocument, 'Pendiente');
+  metricPea.textContent = getMetricLabel(appState.files.pea, 'Pendiente');
+  metricRubric.textContent = getMetricLabel(appState.files.rubric, 'Interna');
+  metricFormat.textContent = getMetricLabel(appState.files.formatBase, 'Interno');
 }
 
 function updateProgress() {
@@ -119,12 +143,14 @@ function updateProgress() {
   const optionalLoaded = Number(Boolean(appState.files.rubric)) + Number(Boolean(appState.files.formatBase));
   const percent = requiredLoaded ? Math.min(100, 60 + optionalLoaded * 20) : appState.files.mainDocument || appState.files.pea ? 30 : 0;
   const classifiedCount = Object.values(appState.files).filter((item) => item && item.classification).length;
+  const structuredCount = Object.values(appState.files).filter((item) => item && item.structureAnalysis).length;
 
   const progressText = document.getElementById('progressText');
   const progressBar = document.getElementById('progressBar');
   const stepUpload = document.getElementById('stepUpload');
   const stepParse = document.getElementById('stepParse');
   const stepClassify = document.getElementById('stepClassify');
+  const stepReview = document.getElementById('stepReview');
 
   progressText.textContent = `${percent}%`;
   progressBar.style.width = `${percent}%`;
@@ -133,6 +159,7 @@ function updateProgress() {
   stepParse.classList.toggle('is-complete', classifiedCount > 0);
   stepClassify.classList.toggle('is-ready', classifiedCount > 0);
   stepClassify.classList.toggle('is-complete', classifiedCount > 0);
+  stepReview.classList.toggle('is-ready', structuredCount > 0);
 }
 
 function updateMode(mode) {
@@ -165,7 +192,7 @@ async function selectFileForRole(role) {
   }
 
   const filePath = result.files[0];
-  updateFileUi(role, `Leyendo y clasificando ${getFileName(filePath)}...`);
+  updateFileUi(role, `Leyendo, clasificando y revisando estructura de ${getFileName(filePath)}...`);
 
   try {
     const imported = await window.rcApi.importDocument({ filePath, role });
@@ -234,7 +261,7 @@ async function bootApp() {
 
     statusTitle.textContent = `${info.name} v${info.version}`;
     statusText.textContent = health.ok ? health.message : 'La app no respondió correctamente.';
-    appStage.textContent = info.stage || 'Bloque 4';
+    appStage.textContent = info.stage || 'Bloque 5';
   } catch (error) {
     statusTitle.textContent = 'Error de inicio';
     statusText.textContent = error.message;
