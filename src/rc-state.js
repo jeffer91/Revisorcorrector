@@ -14,7 +14,8 @@ function createInitialState() {
       pea: null,
       rubric: null,
       report: null
-    }
+    },
+    lastImport: null
   };
 }
 
