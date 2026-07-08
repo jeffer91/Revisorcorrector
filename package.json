@@ -9,7 +9,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "check": "node -e \"require('./src/rc-config'); require('./src/rc-state'); require('./src/rc-document-parser'); require('./src/rc-document-classifier'); require('./src/rc-structure-analyzer'); require('./src/rc-pea-analyzer'); require('./src/rc-rubric-engine'); require('./src/rc-ai-reviewer'); require('./src/rc-file-service'); console.log('Revisorcorrector OK')\""
+    "check": "node -e \"require('./src/rc-config'); require('./src/rc-state'); require('./src/rc-document-parser'); require('./src/rc-document-classifier'); require('./src/rc-structure-analyzer'); require('./src/rc-pea-analyzer'); require('./src/rc-rubric-engine'); require('./src/rc-ai-reviewer'); require('./src/rc-report-builder'); require('./src/rc-export-service'); require('./src/rc-file-service'); console.log('Revisorcorrector OK')\""
   },
   "dependencies": {
     "mammoth": "^1.8.0",
