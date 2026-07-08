@@ -2,6 +2,7 @@ const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
 const { parseDocument } = require('./rc-document-parser');
+const { classifyDocument } = require('./rc-document-classifier');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const STORAGE_ROOT = path.join(PROJECT_ROOT, 'storage');
@@ -39,6 +40,27 @@ async function assertFileExists(filePath) {
   return stats;
 }
 
+function buildRoleValidation(role, classification) {
+  const expectedByRole = {
+    mainDocument: ['libro_asignatura', 'guia_formacion_practica', 'formato_base'],
+    pea: ['pea'],
+    rubric: ['rubrica'],
+    formatBase: ['formato_base', 'libro_asignatura', 'guia_formacion_practica']
+  };
+
+  const expected = expectedByRole[role] || [];
+  const isExpected = expected.includes(classification.detectedType);
+
+  return {
+    role,
+    expectedTypes: expected,
+    isExpected,
+    message: isExpected
+      ? 'El tipo detectado coincide con el uso esperado.'
+      : 'El tipo detectado debe revisarse manualmente antes del análisis final.'
+  };
+}
+
 async function importAcademicDocument({ filePath, role }) {
   if (!filePath) {
     throw new Error('No se recibió la ruta del archivo.');
@@ -62,6 +84,9 @@ async function importAcademicDocument({ filePath, role }) {
   await fs.copyFile(filePath, uploadPath);
 
   const parsed = await parseDocument(uploadPath);
+  const classification = classifyDocument(parsed.summary, parsed.text);
+  const roleValidation = buildRoleValidation(role, classification);
+
   const record = {
     id: importId,
     role,
@@ -73,6 +98,8 @@ async function importAcademicDocument({ filePath, role }) {
     importedAt: new Date().toISOString(),
     sizeBytes: stats.size,
     summary: parsed.summary,
+    classification,
+    roleValidation,
     text: parsed.text
   };
 
@@ -88,7 +115,9 @@ async function importAcademicDocument({ filePath, role }) {
     extractedPath: record.extractedPath,
     importedAt: record.importedAt,
     sizeBytes: record.sizeBytes,
-    summary: record.summary
+    summary: record.summary,
+    classification: record.classification,
+    roleValidation: record.roleValidation
   };
 }
 
