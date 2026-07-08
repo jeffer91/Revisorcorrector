@@ -5,6 +5,8 @@ const { parseDocument } = require('./rc-document-parser');
 const { classifyDocument } = require('./rc-document-classifier');
 const { analyzeStructure } = require('./rc-structure-analyzer');
 const { extractPeaProfile, analyzePeaAlignment } = require('./rc-pea-analyzer');
+const { calculateRubricReview } = require('./rc-rubric-engine');
+const { buildInstitutionalReview } = require('./rc-ai-reviewer');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const STORAGE_ROOT = path.join(PROJECT_ROOT, 'storage');
@@ -177,8 +179,36 @@ async function runPeaAlignment({ mainDocument, pea }) {
   };
 }
 
+async function runInstitutionalReview({ mainDocument, pea }) {
+  const documentRecord = await readExtractedRecord(mainDocument);
+  const peaRecord = pea ? await readExtractedRecord(pea) : null;
+  const peaAlignment = peaRecord ? analyzePeaAlignment({ documentRecord, peaRecord }) : null;
+  const rubricReview = calculateRubricReview({ documentRecord, peaAlignment });
+  const aiReview = buildInstitutionalReview({ documentRecord, peaAlignment, rubricReview });
+  const reviewPayload = {
+    mainDocument: {
+      id: mainDocument.id,
+      name: mainDocument.originalName
+    },
+    pea: pea ? {
+      id: pea.id,
+      name: pea.originalName
+    } : null,
+    peaAlignment,
+    rubricReview,
+    aiReview
+  };
+  const reviewPath = await writeReviewRecord('institutional-review', reviewPayload);
+
+  return {
+    ...reviewPayload,
+    reviewPath
+  };
+}
+
 module.exports = {
   importAcademicDocument,
   ensureStorageDirs,
-  runPeaAlignment
+  runPeaAlignment,
+  runInstitutionalReview
 };
