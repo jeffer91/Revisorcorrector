@@ -1,6 +1,6 @@
 const rcConfig = {
   appName: 'Revisorcorrector',
-  stage: 'bloque-08-reportes-exportacion',
+  stage: 'bloque-09-pdf-real-apertura-reportes',
   window: {
     width: 1280,
     height: 820,
