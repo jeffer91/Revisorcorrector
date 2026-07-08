@@ -5,7 +5,8 @@ const appState = {
     pea: null,
     rubric: null,
     formatBase: null
-  }
+  },
+  peaAlignment: null
 };
 
 const fileRoleConfig = {
@@ -160,6 +161,7 @@ function updateProgress() {
   stepClassify.classList.toggle('is-ready', classifiedCount > 0);
   stepClassify.classList.toggle('is-complete', classifiedCount > 0);
   stepReview.classList.toggle('is-ready', structuredCount > 0);
+  stepReview.classList.toggle('is-complete', Boolean(appState.peaAlignment));
 }
 
 function updateMode(mode) {
@@ -179,6 +181,28 @@ function updateMode(mode) {
   label.textContent = modeName;
 }
 
+function renderPeaAlignment(alignment) {
+  const totalCard = document.querySelector('.rc-total-card strong');
+  const totalCardText = document.querySelector('.rc-total-card p');
+  const criteriaItems = document.querySelectorAll('.rc-criteria-list article');
+  const peaCriterion = criteriaItems[1];
+
+  if (totalCard) {
+    totalCard.textContent = alignment && alignment.score !== null ? `${alignment.score}/100` : '-- / 100';
+  }
+
+  if (totalCardText && alignment) {
+    totalCardText.textContent = `${alignment.status}. Riesgo: ${alignment.risk}.`;
+  }
+
+  if (peaCriterion && alignment) {
+    const label = peaCriterion.querySelector('em');
+    if (label) {
+      label.textContent = `${alignment.score}/100 · ${alignment.risk}`;
+    }
+  }
+}
+
 async function selectFileForRole(role) {
   const config = fileRoleConfig[role];
   const result = await window.rcApi.selectFiles({
@@ -192,6 +216,7 @@ async function selectFileForRole(role) {
   }
 
   const filePath = result.files[0];
+  appState.peaAlignment = null;
   updateFileUi(role, `Leyendo, clasificando y revisando estructura de ${getFileName(filePath)}...`);
 
   try {
@@ -234,9 +259,34 @@ function bindModeButtons() {
 function bindReviewButton() {
   const btnStartReview = document.getElementById('btnStartReview');
 
-  btnStartReview.addEventListener('click', () => {
+  btnStartReview.addEventListener('click', async () => {
+    if (!appState.files.mainDocument || !appState.files.pea) {
+      setView('carga');
+      return;
+    }
+
+    btnStartReview.disabled = true;
+    btnStartReview.textContent = 'Comparando PEA...';
     setView('analisis');
-    updateProgress();
+
+    try {
+      const result = await window.rcApi.analyzePeaAlignment();
+      if (!result.ok) {
+        throw new Error(result.message || 'No se pudo comparar contra el PEA.');
+      }
+
+      appState.peaAlignment = result.alignment;
+      renderPeaAlignment(result.alignment);
+      updateProgress();
+      setView('resultados');
+    } catch (error) {
+      const totalCardText = document.querySelector('.rc-total-card p');
+      if (totalCardText) totalCardText.textContent = `Error PEA: ${error.message}`;
+      setView('resultados');
+    } finally {
+      btnStartReview.disabled = false;
+      btnStartReview.textContent = 'Preparar revisión';
+    }
   });
 }
 
@@ -261,7 +311,7 @@ async function bootApp() {
 
     statusTitle.textContent = `${info.name} v${info.version}`;
     statusText.textContent = health.ok ? health.message : 'La app no respondió correctamente.';
-    appStage.textContent = info.stage || 'Bloque 5';
+    appStage.textContent = info.stage || 'Bloque 6';
   } catch (error) {
     statusTitle.textContent = 'Error de inicio';
     statusText.textContent = error.message;
