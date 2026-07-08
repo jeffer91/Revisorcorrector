@@ -1,6 +1,6 @@
 const rcConfig = {
   appName: 'Revisorcorrector',
-  stage: 'bloque-05-motor-estructura-institucional',
+  stage: 'bloque-06-motor-pea',
   window: {
     width: 1280,
     height: 820,
