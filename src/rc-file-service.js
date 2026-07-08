@@ -4,11 +4,13 @@ const crypto = require('crypto');
 const { parseDocument } = require('./rc-document-parser');
 const { classifyDocument } = require('./rc-document-classifier');
 const { analyzeStructure } = require('./rc-structure-analyzer');
+const { extractPeaProfile, analyzePeaAlignment } = require('./rc-pea-analyzer');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const STORAGE_ROOT = path.join(PROJECT_ROOT, 'storage');
 const UPLOADS_DIR = path.join(STORAGE_ROOT, 'uploads');
 const EXTRACTED_DIR = path.join(STORAGE_ROOT, 'extracted');
+const REVIEWS_DIR = path.join(STORAGE_ROOT, 'reviews');
 
 function sanitizeFileName(fileName) {
   return String(fileName || 'documento')
@@ -29,7 +31,8 @@ function createImportId(role) {
 async function ensureStorageDirs() {
   await Promise.all([
     fs.mkdir(UPLOADS_DIR, { recursive: true }),
-    fs.mkdir(EXTRACTED_DIR, { recursive: true })
+    fs.mkdir(EXTRACTED_DIR, { recursive: true }),
+    fs.mkdir(REVIEWS_DIR, { recursive: true })
   ]);
 }
 
@@ -60,6 +63,23 @@ function buildRoleValidation(role, classification) {
       ? 'El tipo detectado coincide con el uso esperado.'
       : 'El tipo detectado debe revisarse manualmente antes del análisis final.'
   };
+}
+
+async function readExtractedRecord(documentRef) {
+  if (!documentRef || !documentRef.extractedPath) {
+    throw new Error('No existe una extracción válida para leer.');
+  }
+
+  const raw = await fs.readFile(documentRef.extractedPath, 'utf8');
+  return JSON.parse(raw);
+}
+
+async function writeReviewRecord(prefix, payload) {
+  await ensureStorageDirs();
+  const fileName = `${prefix}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+  const reviewPath = path.join(REVIEWS_DIR, fileName);
+  await fs.writeFile(reviewPath, JSON.stringify(payload, null, 2), 'utf8');
+  return reviewPath;
 }
 
 async function importAcademicDocument({ filePath, role }) {
@@ -93,6 +113,9 @@ async function importAcademicDocument({ filePath, role }) {
     classification,
     role
   });
+  const peaProfile = classification.detectedType === 'pea'
+    ? extractPeaProfile(parsed.text, parsed.summary)
+    : null;
 
   const record = {
     id: importId,
@@ -108,6 +131,7 @@ async function importAcademicDocument({ filePath, role }) {
     classification,
     roleValidation,
     structureAnalysis,
+    peaProfile,
     text: parsed.text
   };
 
@@ -126,11 +150,35 @@ async function importAcademicDocument({ filePath, role }) {
     summary: record.summary,
     classification: record.classification,
     roleValidation: record.roleValidation,
-    structureAnalysis: record.structureAnalysis
+    structureAnalysis: record.structureAnalysis,
+    peaProfile: record.peaProfile
+  };
+}
+
+async function runPeaAlignment({ mainDocument, pea }) {
+  const documentRecord = await readExtractedRecord(mainDocument);
+  const peaRecord = await readExtractedRecord(pea);
+  const alignment = analyzePeaAlignment({ documentRecord, peaRecord });
+  const reviewPath = await writeReviewRecord('pea-alignment', {
+    mainDocument: {
+      id: mainDocument.id,
+      name: mainDocument.originalName
+    },
+    pea: {
+      id: pea.id,
+      name: pea.originalName
+    },
+    alignment
+  });
+
+  return {
+    ...alignment,
+    reviewPath
   };
 }
 
 module.exports = {
   importAcademicDocument,
-  ensureStorageDirs
+  ensureStorageDirs,
+  runPeaAlignment
 };
