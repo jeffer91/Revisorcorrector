@@ -4,7 +4,7 @@ App de escritorio en modo Electron para revisar libros de asignatura y guías de
 
 ## Estado del proyecto
 
-Bloque 3 iniciado: carga y lectura inicial de archivos Word, PDF y TXT.
+Bloque 4 iniciado: clasificador automático de documentos conectado a la carga.
 
 ## Objetivo general
 
@@ -23,7 +23,7 @@ Construir una app local para cargar documentos académicos grandes, extraer su c
 1. Base Electron y estructura del proyecto. Completado.
 2. Interfaz principal. Completado en primera versión funcional.
 3. Carga y lectura de archivos. Completado en primera versión funcional.
-4. Clasificador de documentos.
+4. Clasificador de documentos. Completado en primera versión funcional.
 5. Motor de estructura institucional.
 6. Motor PEA.
 7. Motor IA y rúbrica.
@@ -81,6 +81,19 @@ El Bloque 3 agrega lectura local para:
 - `.txt` mediante lectura directa.
 
 Cada documento cargado se copia en `storage/uploads` y se guarda una extracción JSON en `storage/extracted` con texto, vista previa, conteo de palabras, encabezados detectados, referencias candidatas, figuras y tablas.
+
+## Clasificador de documentos
+
+El Bloque 4 agrega clasificación automática por patrones académicos. La app intenta detectar:
+
+- Libro de asignatura.
+- Guía de formación práctica.
+- PEA.
+- Rúbrica.
+- Formato base.
+- Documento desconocido.
+
+La clasificación devuelve tipo detectado, porcentaje de confianza, evidencias y validación contra el rol de carga elegido por el usuario.
 
 ## Regla de mantenimiento
 
