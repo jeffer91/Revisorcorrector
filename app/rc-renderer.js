@@ -6,7 +6,8 @@ const appState = {
     rubric: null,
     formatBase: null
   },
-  peaAlignment: null
+  peaAlignment: null,
+  institutionalReview: null
 };
 
 const fileRoleConfig = {
@@ -161,7 +162,7 @@ function updateProgress() {
   stepClassify.classList.toggle('is-ready', classifiedCount > 0);
   stepClassify.classList.toggle('is-complete', classifiedCount > 0);
   stepReview.classList.toggle('is-ready', structuredCount > 0);
-  stepReview.classList.toggle('is-complete', Boolean(appState.peaAlignment));
+  stepReview.classList.toggle('is-complete', Boolean(appState.institutionalReview));
 }
 
 function updateMode(mode) {
@@ -181,26 +182,38 @@ function updateMode(mode) {
   label.textContent = modeName;
 }
 
-function renderPeaAlignment(alignment) {
+function renderCriteria(rubricReview) {
+  const criteriaItems = document.querySelectorAll('.rc-criteria-list article');
+  const criteria = rubricReview.criteria || [];
+
+  criteriaItems.forEach((item, index) => {
+    const criterion = criteria[index];
+    if (!criterion) return;
+
+    const label = item.querySelector('em');
+    const text = item.querySelector('span');
+    if (text) text.textContent = criterion.name;
+    if (label) label.textContent = `${criterion.score}/5 · ${criterion.risk}`;
+  });
+}
+
+function renderInstitutionalReview(review) {
+  const rubricReview = review.rubricReview;
+  const peaAlignment = review.peaAlignment;
   const totalCard = document.querySelector('.rc-total-card strong');
   const totalCardText = document.querySelector('.rc-total-card p');
-  const criteriaItems = document.querySelectorAll('.rc-criteria-list article');
-  const peaCriterion = criteriaItems[1];
+  const reportState = document.querySelector('.rc-report-box span');
+  const reportSummary = document.querySelector('.rc-report-preview p');
 
-  if (totalCard) {
-    totalCard.textContent = alignment && alignment.score !== null ? `${alignment.score}/100` : '-- / 100';
+  if (totalCard) totalCard.textContent = `${rubricReview.total}/${rubricReview.max}`;
+  if (totalCardText) {
+    const peaText = peaAlignment && peaAlignment.score !== null ? ` PEA: ${peaAlignment.score}/100.` : '';
+    totalCardText.textContent = `${rubricReview.status}. Riesgo: ${rubricReview.risk}.${peaText}`;
   }
+  if (reportState) reportState.textContent = `${rubricReview.status} · ${rubricReview.total}/30`;
+  if (reportSummary) reportSummary.textContent = rubricReview.conclusion;
 
-  if (totalCardText && alignment) {
-    totalCardText.textContent = `${alignment.status}. Riesgo: ${alignment.risk}.`;
-  }
-
-  if (peaCriterion && alignment) {
-    const label = peaCriterion.querySelector('em');
-    if (label) {
-      label.textContent = `${alignment.score}/100 · ${alignment.risk}`;
-    }
-  }
+  renderCriteria(rubricReview);
 }
 
 async function selectFileForRole(role) {
@@ -217,6 +230,7 @@ async function selectFileForRole(role) {
 
   const filePath = result.files[0];
   appState.peaAlignment = null;
+  appState.institutionalReview = null;
   updateFileUi(role, `Leyendo, clasificando y revisando estructura de ${getFileName(filePath)}...`);
 
   try {
@@ -260,28 +274,29 @@ function bindReviewButton() {
   const btnStartReview = document.getElementById('btnStartReview');
 
   btnStartReview.addEventListener('click', async () => {
-    if (!appState.files.mainDocument || !appState.files.pea) {
+    if (!appState.files.mainDocument) {
       setView('carga');
       return;
     }
 
     btnStartReview.disabled = true;
-    btnStartReview.textContent = 'Comparando PEA...';
+    btnStartReview.textContent = 'Generando rúbrica...';
     setView('analisis');
 
     try {
-      const result = await window.rcApi.analyzePeaAlignment();
+      const result = await window.rcApi.runInstitutionalReview();
       if (!result.ok) {
-        throw new Error(result.message || 'No se pudo comparar contra el PEA.');
+        throw new Error(result.message || 'No se pudo generar la revisión institucional.');
       }
 
-      appState.peaAlignment = result.alignment;
-      renderPeaAlignment(result.alignment);
+      appState.institutionalReview = result.review;
+      appState.peaAlignment = result.review.peaAlignment;
+      renderInstitutionalReview(result.review);
       updateProgress();
       setView('resultados');
     } catch (error) {
       const totalCardText = document.querySelector('.rc-total-card p');
-      if (totalCardText) totalCardText.textContent = `Error PEA: ${error.message}`;
+      if (totalCardText) totalCardText.textContent = `Error de revisión: ${error.message}`;
       setView('resultados');
     } finally {
       btnStartReview.disabled = false;
@@ -311,7 +326,7 @@ async function bootApp() {
 
     statusTitle.textContent = `${info.name} v${info.version}`;
     statusText.textContent = health.ok ? health.message : 'La app no respondió correctamente.';
-    appStage.textContent = info.stage || 'Bloque 6';
+    appStage.textContent = info.stage || 'Bloque 7';
   } catch (error) {
     statusTitle.textContent = 'Error de inicio';
     statusText.textContent = error.message;
