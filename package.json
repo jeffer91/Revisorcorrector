@@ -1,0 +1,17 @@
+{
+  "name": "revisorcorrector",
+  "version": "0.1.0",
+  "description": "App Electron para revisar libros de asignatura y guías de formación práctica con rúbrica, PEA y apoyo de IA.",
+  "main": "electron/rc-main.js",
+  "author": "Jefferson Villarreal",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "check": "node -e \"require('./src/rc-config'); require('./src/rc-state'); console.log('Revisorcorrector OK')\""
+  },
+  "devDependencies": {
+    "electron": "^31.7.7"
+  }
+}

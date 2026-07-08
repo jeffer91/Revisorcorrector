@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Revisorcorrector</title>
+  <link rel="stylesheet" href="./rc-styles.css" />
+</head>
+<body>
+  <main class="rc-shell">
+    <section class="rc-hero">
+      <div>
+        <p class="rc-eyebrow">Bloque 1 · Base Electron</p>
+        <h1>Revisorcorrector</h1>
+        <p class="rc-subtitle">
+          App para revisar libros de asignatura y guías de formación práctica con formato institucional, rúbrica, PEA y apoyo de IA.
+        </p>
+      </div>
+      <div class="rc-status-card">
+        <span class="rc-status-dot"></span>
+        <div>
+          <strong id="rcStatusTitle">Iniciando...</strong>
+          <p id="rcStatusText">Verificando conexión interna.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="rc-grid">
+      <article class="rc-panel">
+        <h2>1. Carga</h2>
+        <p>En los siguientes bloques se habilitará la carga de Word, PDF, PEA, rúbricas y formatos base.</p>
+        <button id="btnSelectFile" type="button">Probar selector de archivo</button>
+        <p id="selectedFile" class="rc-muted">Sin archivo seleccionado.</p>
+      </article>
+
+      <article class="rc-panel">
+        <h2>2. Análisis</h2>
+        <p>La app preparará el documento por bloques para revisar estructura, PEA, APA 7, didáctica y rúbrica.</p>
+        <ul>
+          <li>Libro de asignatura</li>
+          <li>Guía de formación práctica</li>
+          <li>PEA y rúbricas</li>
+        </ul>
+      </article>
+
+      <article class="rc-panel">
+        <h2>3. Resultados</h2>
+        <p>Se mostrarán observaciones por criterio, puntaje sugerido y estado final de aprobación.</p>
+      </article>
+
+      <article class="rc-panel">
+        <h2>4. Informe</h2>
+        <p>El informe final se exportará en Word, PDF y JSON técnico cuando se completen los bloques posteriores.</p>
+      </article>
+    </section>
+  </main>
+
+  <script src="./rc-renderer.js"></script>
+</body>
+</html>

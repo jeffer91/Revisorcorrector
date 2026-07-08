@@ -1,0 +1,52 @@
+{
+  "version": "0.1.0",
+  "libro_asignatura": {
+    "seccionesObligatorias": [
+      "Nombre de la asignatura",
+      "Presentación de la asignatura",
+      "Pre requisitos de la asignatura",
+      "Evaluación inicial diagnóstica",
+      "Orientaciones Generales para el Estudiante",
+      "Unidad I",
+      "Unidad II",
+      "Unidad III",
+      "Unidad IV",
+      "Referencias",
+      "Glosario",
+      "Anexos"
+    ],
+    "seccionesPorUnidad": [
+      "Resultado de Aprendizaje",
+      "Contenidos",
+      "Estrategias de enseñanza-aprendizaje",
+      "Evaluación de Unidad",
+      "Auto evaluación",
+      "Reflexiones sobre la Unidad"
+    ],
+    "minimoReferencias": 15,
+    "minimoGlosario": 10
+  },
+  "guia_formacion_practica": {
+    "seccionesObligatorias": [
+      "Presentación",
+      "Taller 1",
+      "Taller 2",
+      "Proyecto Final",
+      "Referencias bibliográficas"
+    ],
+    "seccionesPorTaller": [
+      "Título",
+      "Tiempo de duración",
+      "Objetivo",
+      "Fundamentación Teórica",
+      "Preparación previa",
+      "Enunciado del Taller",
+      "Destrezas y habilidades a desarrollar",
+      "Identificación de Riesgos",
+      "Normas de Seguridad",
+      "Equipo de bioseguridad",
+      "Evaluación"
+    ],
+    "minimoReferencias": 5
+  }
+}

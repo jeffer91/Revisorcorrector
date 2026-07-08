@@ -1,0 +1,10 @@
+{
+  "version": "0.1.0",
+  "nota": "Prompts base. Se completarán en el bloque del motor IA.",
+  "prompts": {
+    "revisionLibro": "Revisa el bloque de libro de asignatura según formato institucional, rúbrica, PEA y APA 7.",
+    "revisionGuia": "Revisa el bloque de guía de formación práctica según formato institucional, rúbrica, PEA, seguridad y APA 7.",
+    "comparacionPEA": "Compara el contenido del documento contra el PEA y detecta contenidos faltantes, desviados o mal evaluados.",
+    "informe": "Genera observaciones claras, formales y accionables para el informe final."
+  }
+}

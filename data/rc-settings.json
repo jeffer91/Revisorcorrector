@@ -1,0 +1,14 @@
+{
+  "version": "0.1.0",
+  "modoRevisionPredeterminado": "experto",
+  "tema": "claro",
+  "exportacion": {
+    "word": true,
+    "pdf": true,
+    "json": true
+  },
+  "limites": {
+    "lineasMaximasPorArchivo": 700,
+    "tamanoBloqueTexto": 12000
+  }
+}
