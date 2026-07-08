@@ -4,7 +4,7 @@ App de escritorio en modo Electron para revisar libros de asignatura y guías de
 
 ## Estado del proyecto
 
-Bloque 7 iniciado: motor de rúbrica e IA estructurada conectado a la revisión institucional.
+Bloque 8 iniciado: reportes y exportación local conectados a la revisión institucional.
 
 ## Objetivo general
 
@@ -27,7 +27,7 @@ Construir una app local para cargar documentos académicos grandes, extraer su c
 5. Motor de estructura institucional. Completado en primera versión funcional.
 6. Motor PEA. Completado en primera versión funcional.
 7. Motor IA y rúbrica. Completado en primera versión funcional.
-8. Reportes, exportación y prueba real.
+8. Reportes, exportación y prueba real. Completado en primera versión funcional.
 
 ## Ejecutar en desarrollo
 
@@ -139,6 +139,18 @@ Cada criterio recibe puntaje de 1 a 5, con total sobre 30. El estado final se cl
 - 28 a 30: Aprobado sin modificaciones.
 
 También se genera un contexto estructurado listo para integrarse con IA externa en una versión posterior, sin enviar documentos automáticamente a ningún proveedor.
+
+## Reportes y exportación
+
+El Bloque 8 genera reportes locales después de la revisión institucional. La app exporta automáticamente en `storage/reports`:
+
+- JSON técnico.
+- Markdown.
+- TXT.
+- HTML.
+- DOC compatible con Word basado en HTML.
+
+Además, mantiene el respaldo completo de la revisión en `storage/reviews`.
 
 ## Regla de mantenimiento
 
