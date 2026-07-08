@@ -4,7 +4,7 @@ App de escritorio en modo Electron para revisar libros de asignatura y guías de
 
 ## Estado del proyecto
 
-Bloque 6 iniciado: motor PEA conectado para comparar documento principal contra el PEA cargado.
+Bloque 7 iniciado: motor de rúbrica e IA estructurada conectado a la revisión institucional.
 
 ## Objetivo general
 
@@ -26,7 +26,7 @@ Construir una app local para cargar documentos académicos grandes, extraer su c
 4. Clasificador de documentos. Completado en primera versión funcional.
 5. Motor de estructura institucional. Completado en primera versión funcional.
 6. Motor PEA. Completado en primera versión funcional.
-7. Motor IA y rúbrica.
+7. Motor IA y rúbrica. Completado en primera versión funcional.
 8. Reportes, exportación y prueba real.
 
 ## Ejecutar en desarrollo
@@ -120,6 +120,25 @@ El Bloque 6 agrega comparación automática entre el documento principal y el PE
 - Cobertura, riesgo y puntaje de alineación sobre 100.
 
 La comparación se ejecuta desde el botón Preparar revisión y guarda un respaldo JSON en `storage/reviews`.
+
+## Motor IA y rúbrica
+
+El Bloque 7 agrega el motor de revisión institucional por criterios A-F. La app calcula:
+
+- A. Cumplimiento del formato institucional.
+- B. Contenidos alineados al PEA actual.
+- C. Calidad de la escritura y edición.
+- D. Didáctica del contenido.
+- E. Originalidad del texto y recursos.
+- F. Referencias bibliográficas y citas APA 7.
+
+Cada criterio recibe puntaje de 1 a 5, con total sobre 30. El estado final se clasifica como:
+
+- 06 a 12: No aprobado.
+- 13 a 27: Debe realizar modificaciones.
+- 28 a 30: Aprobado sin modificaciones.
+
+También se genera un contexto estructurado listo para integrarse con IA externa en una versión posterior, sin enviar documentos automáticamente a ningún proveedor.
 
 ## Regla de mantenimiento
 
