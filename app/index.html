@@ -13,7 +13,7 @@
         <div class="rc-brand-mark">RC</div>
         <div>
           <strong>Revisorcorrector</strong>
-          <span id="appStage">Bloque 2</span>
+          <span id="appStage">Bloque 9</span>
         </div>
       </div>
 
@@ -50,16 +50,16 @@
       <section id="view-inicio" class="rc-view is-active" data-title="Inicio">
         <div class="rc-hero-card">
           <div>
-            <p class="rc-eyebrow">Bloque 2 · Interfaz principal</p>
+            <p class="rc-eyebrow">Bloque 9 · PDF real y apertura de reportes</p>
             <h2>Revisión fuerte de libros, guías y PEA</h2>
             <p>
-              Esta pantalla deja listo el flujo principal: carga de documentos, preparación del análisis, visualización de resultados, informe y ajustes.
+              La app prepara la carga, análisis, rúbrica institucional y exportación local del informe en varios formatos, incluyendo PDF generado desde Electron.
             </p>
           </div>
           <div class="rc-score-preview">
             <span>Estado</span>
-            <strong>Base lista</strong>
-            <small>Los motores se conectarán en los siguientes bloques.</small>
+            <strong>Reportes listos</strong>
+            <small>Genera informe, PDF y carpeta local de resultados.</small>
           </div>
         </div>
 
@@ -89,11 +89,11 @@
           </article>
           <article class="rc-panel">
             <h3>2. Analizar</h3>
-            <p>La app dividirá el documento y preparará criterios de estructura, rúbrica, APA 7 y alineación al PEA.</p>
+            <p>La app divide el documento y revisa estructura, rúbrica, APA 7 y alineación al PEA.</p>
           </article>
           <article class="rc-panel">
             <h3>3. Exportar</h3>
-            <p>El resultado final se organizará como informe formal con puntaje y observaciones accionables.</p>
+            <p>El resultado se guarda como informe formal en JSON, Markdown, TXT, HTML, DOC compatible y PDF.</p>
           </article>
         </div>
       </section>
@@ -102,7 +102,7 @@
         <div class="rc-section-head">
           <div>
             <h2>Carga de documentos</h2>
-            <p>En este bloque la interfaz queda lista. La lectura real se conectará en el Bloque 3.</p>
+            <p>Selecciona los documentos necesarios para ejecutar la revisión institucional.</p>
           </div>
           <div class="rc-segmented" role="group" aria-label="Modo de revisión">
             <button class="is-active" type="button" data-mode="experto">Experto</button>
@@ -158,9 +158,9 @@
         <div class="rc-section-head">
           <div>
             <h2>Preparación del análisis</h2>
-            <p>Vista de control para el flujo de revisión. En los siguientes bloques se conectarán los motores reales.</p>
+            <p>Vista de control para el flujo de lectura, clasificación, revisión y exportación.</p>
           </div>
-          <span class="rc-pill">Pendiente de Bloques 3 a 7</span>
+          <span class="rc-pill">Motor local activo</span>
         </div>
 
         <div class="rc-progress-card">
@@ -199,7 +199,7 @@
             <span>4</span>
             <div>
               <h3>Revisión institucional</h3>
-              <p>Estructura, PEA, rúbrica, APA 7, didáctica y redacción.</p>
+              <p>Estructura, PEA, rúbrica, APA 7, didáctica, redacción y exportación.</p>
             </div>
           </article>
         </div>
@@ -209,9 +209,9 @@
         <div class="rc-section-head">
           <div>
             <h2>Resultados de revisión</h2>
-            <p>Plantilla visual para mostrar puntajes, riesgos y observaciones por criterio.</p>
+            <p>Vista de puntajes, riesgos y observaciones por criterio.</p>
           </div>
-          <span class="rc-pill rc-pill-warning">Sin análisis ejecutado</span>
+          <span class="rc-pill rc-pill-warning">Resultado automático</span>
         </div>
 
         <div class="rc-results-layout">
@@ -235,17 +235,17 @@
         <div class="rc-section-head">
           <div>
             <h2>Informe formal</h2>
-            <p>Vista preparada para generar reportes en Word, PDF y JSON técnico.</p>
+            <p>Reportes generados localmente en la carpeta storage/reports.</p>
           </div>
           <div class="rc-topbar-actions">
-            <button type="button" disabled>Exportar Word</button>
-            <button type="button" disabled>Exportar PDF</button>
+            <button type="button" id="btnOpenPdf" disabled>Abrir PDF</button>
+            <button type="button" id="btnOpenReports" disabled>Abrir carpeta</button>
           </div>
         </div>
 
         <article class="rc-report-preview">
           <h3>Resumen ejecutivo</h3>
-          <p>Cuando se conecten los motores, aquí aparecerá el resumen del documento, estado final, observaciones generales y recomendaciones priorizadas.</p>
+          <p>Cuando se ejecute la revisión, aquí aparecerá la ruta de los informes generados.</p>
           <div class="rc-report-box">
             <strong>Estado final:</strong>
             <span>No disponible todavía.</span>
