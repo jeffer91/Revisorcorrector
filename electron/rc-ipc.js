@@ -1,7 +1,7 @@
 const { app, dialog, ipcMain } = require('electron');
 const { rcConfig } = require('../src/rc-config');
 const { createInitialState } = require('../src/rc-state');
-const { importAcademicDocument, runPeaAlignment } = require('../src/rc-file-service');
+const { importAcademicDocument, runPeaAlignment, runInstitutionalReview } = require('../src/rc-file-service');
 
 const runtimeState = createInitialState();
 
@@ -22,7 +22,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle('app:health-check', () => ({
     ok: true,
-    message: 'Motor PEA activo',
+    message: 'Motor IA y rúbrica activo',
     loadedAt: runtimeState.loadedAt
   }));
 
@@ -75,6 +75,30 @@ function registerIpcHandlers() {
       return {
         ok: true,
         alignment
+      };
+    } catch (error) {
+      return safeError(error);
+    }
+  });
+
+  ipcMain.handle('analysis:institutional-review', async () => {
+    try {
+      if (!runtimeState.files.mainDocument) {
+        throw new Error('Carga primero el documento principal.');
+      }
+
+      const review = await runInstitutionalReview({
+        mainDocument: runtimeState.files.mainDocument,
+        pea: runtimeState.files.pea
+      });
+
+      runtimeState.analysis.report = review;
+      runtimeState.analysis.pea = review.peaAlignment;
+      runtimeState.analysis.rubric = review.rubricReview;
+
+      return {
+        ok: true,
+        review
       };
     } catch (error) {
       return safeError(error);
