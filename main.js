@@ -1,15 +1,58 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+'use strict';
+
+const { app, BrowserWindow, dialog, ipcMain, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const XLSX = require('xlsx');
-const { cert, getApps, initializeApp } = require('firebase-admin/app');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
 const TARGET_PROJECT_ID = 'titulos-ec2fa';
-let mainWindow;
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyDkSOhJ552LwxQtt8GhP5iDJk49y0t4mOg',
+  authDomain: 'titulos-ec2fa.firebaseapp.com',
+  projectId: 'titulos-ec2fa',
+  storageBucket: 'titulos-ec2fa.firebasestorage.app',
+  messagingSenderId: '14269419714',
+  appId: '1:14269419714:web:79df03c4df888c61edab5b',
+  measurementId: 'G-4MC529QMW9'
+};
+
+let mainWindow = null;
 let selectedExcelPath = null;
+let selectedWorkbookType = null;
 let analysisResult = null;
+
+function createApplicationMenu() {
+  const openConsole = () => {
+    const window = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+    if (window && !window.isDestroyed()) window.webContents.toggleDevTools();
+  };
+
+  return Menu.buildFromTemplate([
+    {
+      label: 'Archivo',
+      submenu: [{ role: 'quit', label: 'Salir' }]
+    },
+    {
+      label: 'Ver',
+      submenu: [
+        { role: 'reload', label: 'Recargar' },
+        { role: 'forceReload', label: 'Forzar recarga' },
+        { type: 'separator' },
+        { label: 'Abrir/cerrar consola', accelerator: 'F12', click: openConsole },
+        { type: 'separator' },
+        { role: 'resetZoom', label: 'Tamaño real' },
+        { role: 'zoomIn', label: 'Aumentar zoom' },
+        { role: 'zoomOut', label: 'Reducir zoom' },
+        { role: 'togglefullscreen', label: 'Pantalla completa' }
+      ]
+    },
+    {
+      label: 'Ayuda',
+      submenu: [{ label: 'Consola de diagnóstico', click: openConsole }]
+    }
+  ]);
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -25,7 +68,9 @@ function createWindow() {
       nodeIntegration: false
     }
   });
-  mainWindow.setMenuBarVisibility(false);
+
+  Menu.setApplicationMenu(createApplicationMenu());
+  mainWindow.setMenuBarVisibility(true);
   mainWindow.loadFile('index.html');
 }
 
@@ -37,6 +82,9 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
+process.on('uncaughtException', (error) => console.error('[Error no controlado]', error));
+process.on('unhandledRejection', (error) => console.error('[Promesa rechazada]', error));
+
 function sendProgress(percent, message, tone = 'normal') {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   mainWindow.webContents.send('migracion:progreso', { percent, message, tone });
@@ -46,47 +94,47 @@ function readWorkbook(filePath) {
   return XLSX.readFile(filePath, { cellDates: false, raw: true });
 }
 
-function hasMigrationSheets(workbook) {
-  const names = new Set(workbook.SheetNames.map((name) => normalizeText(name)));
-  return names.has('envios') && names.has('resoluciones') && names.has('coordinadores');
-}
-
-function resolveBackupPath(chosenPath) {
-  const chosenBook = readWorkbook(chosenPath);
-  if (hasMigrationSheets(chosenBook)) return chosenPath;
-
-  const folder = path.dirname(chosenPath);
-  const candidates = fs.readdirSync(folder)
-    .filter((name) => /\.xlsx?$/i.test(name) && !name.startsWith('~$'))
-    .map((name) => path.join(folder, name));
-
-  for (const candidate of candidates) {
-    try {
-      if (hasMigrationSheets(readWorkbook(candidate))) return candidate;
-    } catch (_error) {
-      // Ignorar archivos dañados o protegidos.
-    }
-  }
-
-  throw new Error('El archivo seleccionado no contiene Envios, Resoluciones y Coordinadores, y no se encontró un respaldo válido en la misma carpeta.');
-}
-
-function sheetRows(workbook, sheetName) {
-  const realName = workbook.SheetNames.find((name) => normalizeText(name) === normalizeText(sheetName));
-  if (!realName) return [];
-  return XLSX.utils.sheet_to_json(workbook.Sheets[realName], {
-    defval: null,
-    raw: true,
-    blankrows: false
-  });
-}
-
 function normalizeText(value) {
   return String(value ?? '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
     .toLowerCase();
+}
+
+function slug(value) {
+  return normalizeText(value)
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 120);
+}
+
+function stableHash(value, length = 12) {
+  return crypto.createHash('sha256').update(String(value)).digest('hex').slice(0, length);
+}
+
+function cleanString(value) {
+  const text = String(value ?? '').trim();
+  return text || null;
+}
+
+function compactObject(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map(compactObject)
+      .filter((item) => item !== undefined && item !== null && item !== '');
+  }
+
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    const result = {};
+    for (const [key, item] of Object.entries(value)) {
+      const cleaned = compactObject(item);
+      if (cleaned !== undefined && cleaned !== null && cleaned !== '') result[key] = cleaned;
+    }
+    return result;
+  }
+
+  return value === undefined ? undefined : value;
 }
 
 function pick(row, aliases) {
@@ -99,9 +147,21 @@ function pick(row, aliases) {
   return null;
 }
 
-function cleanString(value) {
-  const text = String(value ?? '').trim();
-  return text || null;
+function sheetRows(workbook, sheetName) {
+  const realName = workbook.SheetNames.find((name) => normalizeText(name) === normalizeText(sheetName));
+  if (!realName) return [];
+  return XLSX.utils.sheet_to_json(workbook.Sheets[realName], {
+    defval: null,
+    raw: true,
+    blankrows: false
+  });
+}
+
+function detectWorkbookType(workbook) {
+  const names = new Set(workbook.SheetNames.map(normalizeText));
+  if (names.has('envios') && names.has('resoluciones') && names.has('coordinadores')) return 'titulos';
+  if (names.has('ia') && names.has('servicios') && names.has('configuracion')) return 'claves';
+  return null;
 }
 
 function normalizeCedula(value) {
@@ -138,26 +198,17 @@ function normalizePeriod(value) {
   return { id: slug(original) || 'sin_periodo', label: original };
 }
 
-function slug(value) {
-  return normalizeText(value)
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .slice(0, 120);
-}
-
-function stableHash(value, length = 12) {
-  return crypto.createHash('sha256').update(String(value)).digest('hex').slice(0, length);
-}
-
 function excelDateToIso(value) {
   if (value == null || value === '') return null;
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
+
   if (typeof value === 'number') {
     const parsed = XLSX.SSF.parse_date_code(value);
     if (parsed) {
       return new Date(Date.UTC(parsed.y, parsed.m - 1, parsed.d, parsed.H, parsed.M, Math.floor(parsed.S))).toISOString();
     }
   }
+
   const text = String(value).trim();
   if (!text || text.includes('FieldValue.serverTimestamp')) return null;
   const date = new Date(text);
@@ -178,24 +229,20 @@ function normalizeStatus(value, fallback = 'PENDIENTE_REVISION') {
   if (text.includes('resuelt')) return 'RESUELTO';
   if (text.includes('enviad')) return 'ENVIADO';
   if (text.includes('pendient')) return 'PENDIENTE_REVISION';
+  if (text.includes('activo')) return 'ACTIVO';
+  if (text.includes('inactivo')) return 'INACTIVO';
   return text.toUpperCase().replace(/[^A-Z0-9_]/g, '_');
 }
 
-function compactObject(value) {
-  if (Array.isArray(value)) return value.map(compactObject).filter((item) => item !== undefined);
-  if (value && typeof value === 'object' && !(value instanceof Date)) {
-    const result = {};
-    for (const [key, item] of Object.entries(value)) {
-      const cleaned = compactObject(item);
-      if (cleaned !== undefined && cleaned !== null && cleaned !== '') result[key] = cleaned;
-    }
-    return result;
-  }
-  return value === undefined ? undefined : value;
+function normalizeCellValue(value) {
+  if (value == null || value === '') return null;
+  if (typeof value === 'boolean' || typeof value === 'number') return value;
+  const iso = excelDateToIso(value);
+  if (iso && /^\d{4}-\d{2}-\d{2}T/.test(String(value))) return iso;
+  return cleanString(value);
 }
 
-function analyzeWorkbook(filePath) {
-  const workbook = readWorkbook(filePath);
+function analyzeTitlesWorkbook(filePath, workbook) {
   const enviosRows = sheetRows(workbook, 'Envios');
   const resolucionesRows = sheetRows(workbook, 'Resoluciones');
   const coordinadoresRows = sheetRows(workbook, 'Coordinadores');
@@ -221,7 +268,7 @@ function analyzeWorkbook(filePath) {
     const snapshot = compactObject({
       cedula,
       nombres: cleanString(pick(row, ['nombres', 'Estudiante', 'Nombres'])),
-      carreraId,
+      carreraId: careerId,
       carreraCodigo: careerCode,
       carreraNombre: careerName,
       periodoId: period.id,
@@ -233,6 +280,7 @@ function analyzeWorkbook(filePath) {
       correoPersonal: cleanString(pick(row, ['correoPersonal'])),
       celular: String(pick(row, ['celular']) ?? '').replace(/\D/g, '') || null
     });
+
     studentIndex.set(`${period.id}__${cedula}`, snapshot);
     if (!studentIndex.has(cedula)) studentIndex.set(cedula, snapshot);
 
@@ -251,45 +299,61 @@ function analyzeWorkbook(filePath) {
       warnings.push(`Envios fila ${index + 2}: cédula inválida.`);
       continue;
     }
+
     const key = `${period.id}__${cedula}`;
     const serverDate = excelDateToIso(pick(row, ['Fecha servidor']));
     const sentDate = excelDateToIso(pick(row, ['Fecha envío'])) || serverDate;
     const careerName = cleanString(pick(row, ['Carrera', 'nombreCarrera']));
     const indexSnapshot = studentIndex.get(key) || studentIndex.get(cedula) || {};
-    const careerId = indexSnapshot.carreraId || careerByName.get(normalizeText(careerName)) || `carrera_${stableHash(careerName || 'sin_carrera')}`;
+    const careerId = indexSnapshot.carreraId
+      || careerByName.get(normalizeText(careerName))
+      || `carrera_${stableHash(careerName || 'sin_carrera')}`;
 
     if (careerName && !careers.has(careerId)) {
-      careers.set(careerId, { id: careerId, codigo: indexSnapshot.carreraCodigo || null, nombre: careerName, activo: true });
+      careers.set(careerId, {
+        id: careerId,
+        codigo: indexSnapshot.carreraCodigo || null,
+        nombre: careerName,
+        activo: true
+      });
       careerByName.set(normalizeText(careerName), careerId);
     }
+
     periods.set(period.id, { id: period.id, nombre: period.label, activo: false });
 
+    const titles = [1, 2, 3].map((number) => ({
+      numero: number,
+      titulo: cleanString(pick(row, [`Título ${number}`, `Titulo ${number}`, `Titulo${number}`]))
+    })).filter((item) => item.titulo);
+
     const version = compactObject({
-      sourceRow: index + 2,
-      sourceId: cleanString(pick(row, ['ID registro'])),
+      filaOrigen: index + 2,
+      idOrigen: cleanString(pick(row, ['ID registro'])),
       fechaServidor: serverDate,
       fechaEnvio: sentDate,
       cedula,
-      estudiante: cleanString(pick(row, ['Estudiante', 'Nombres'])) || indexSnapshot.nombres,
-      carreraId,
+      nombres: cleanString(pick(row, ['Estudiante', 'Nombres'])) || indexSnapshot.nombres,
+      carreraId: careerId,
       carreraNombre: careerName || indexSnapshot.carreraNombre,
       periodoId: period.id,
-      periodoLabel: period.label,
+      periodoNombre: period.label,
       telegram: cleanString(pick(row, ['Telegram'])),
-      propuestas: [1, 2, 3].map((number) => ({
-        numero: number,
-        titulo: cleanString(pick(row, [`Título ${number}`, `Titulo ${number}`, `Titulo${number}`]))
-      })).filter((item) => item.titulo),
-      propuestaPreferida: Number(pick(row, ['Preferido'])) || null,
+      titulo1: titles.find((item) => item.numero === 1)?.titulo || null,
+      titulo2: titles.find((item) => item.numero === 2)?.titulo || null,
+      titulo3: titles.find((item) => item.numero === 3)?.titulo || null,
+      tituloPreferidoNumero: Number(pick(row, ['Preferido'])) || null,
       estadoFirebase: normalizeStatus(pick(row, ['Estado Firebase']), 'ENVIADO'),
       estadoGoogleSheets: normalizeStatus(pick(row, ['Estado Google Sheets']), 'RESPALDADO'),
       estado: normalizeStatus(pick(row, ['Estado']), 'PENDIENTE_REVISION'),
       observacion: cleanString(pick(row, ['Observación', 'Observacion']))
     });
-    version.sortMillis = dateMillis(version.fechaEnvio || version.fechaServidor);
-    version.signature = stableHash(JSON.stringify({
-      propuestas: version.propuestas,
-      preferida: version.propuestaPreferida,
+
+    version.ordenFecha = dateMillis(version.fechaEnvio || version.fechaServidor);
+    version.firma = stableHash(JSON.stringify({
+      titulo1: version.titulo1,
+      titulo2: version.titulo2,
+      titulo3: version.titulo3,
+      preferido: version.tituloPreferidoNumero,
       estado: version.estado,
       observacion: version.observacion
     }), 20);
@@ -306,96 +370,119 @@ function analyzeWorkbook(filePath) {
       warnings.push(`Resoluciones fila ${index + 2}: cédula inválida.`);
       continue;
     }
+
     const envioId = `${period.id}__${cedula}`;
     const resolution = compactObject({
-      sourceRow: index + 2,
-      sourceId: cleanString(pick(row, ['ID registro'])),
+      filaOrigen: index + 2,
+      idOrigen: cleanString(pick(row, ['ID registro'])),
       fechaServidor: excelDateToIso(pick(row, ['Fecha servidor'])),
-      fechaResolucion: excelDateToIso(pick(row, ['Fecha resolución', 'Fecha resolucion'])) || excelDateToIso(pick(row, ['Fecha servidor'])),
+      fechaResolucion: excelDateToIso(pick(row, ['Fecha resolución', 'Fecha resolucion']))
+        || excelDateToIso(pick(row, ['Fecha servidor'])),
       cedula,
-      estudiante: cleanString(pick(row, ['Estudiante'])),
-      carrera: cleanString(pick(row, ['Carrera'])),
+      nombres: cleanString(pick(row, ['Estudiante'])),
+      carreraNombre: cleanString(pick(row, ['Carrera'])),
       periodoId: period.id,
-      periodoLabel: period.label,
+      periodoNombre: period.label,
       coordinador: cleanString(pick(row, ['Coordinador'])),
-      estadoFinal: normalizeStatus(pick(row, ['Estado final'])),
+      estado: normalizeStatus(pick(row, ['Estado final'])),
       tituloElegido: cleanString(pick(row, ['Título elegido', 'Titulo elegido'])),
       tituloCorregido: cleanString(pick(row, ['Título corregido', 'Titulo corregido'])),
       observacion: cleanString(pick(row, ['Observación', 'Observacion']))
     });
-    resolution.sortMillis = dateMillis(resolution.fechaResolucion || resolution.fechaServidor);
-    resolution.signature = stableHash(JSON.stringify({
-      estado: resolution.estadoFinal,
+
+    resolution.ordenFecha = dateMillis(resolution.fechaResolucion || resolution.fechaServidor);
+    resolution.firma = stableHash(JSON.stringify({
+      estado: resolution.estado,
       titulo: resolution.tituloCorregido || resolution.tituloElegido,
       observacion: resolution.observacion,
       coordinador: resolution.coordinador
     }), 20);
+
     if (!resolutionsByEnvio.has(envioId)) resolutionsByEnvio.set(envioId, []);
     resolutionsByEnvio.get(envioId).push(resolution);
   }
 
   const envios = [];
   let duplicateRows = 0;
+  let uniqueResolutionCount = 0;
+
   for (const [envioId, versions] of groups.entries()) {
-    versions.sort((a, b) => a.sortMillis - b.sortMillis || a.sourceRow - b.sourceRow);
+    versions.sort((a, b) => a.ordenFecha - b.ordenFecha || a.filaOrigen - b.filaOrigen);
     const uniqueVersions = [];
-    const signatures = new Set();
+    const versionSignatures = new Set();
+
     for (const version of versions) {
-      if (signatures.has(version.signature)) {
+      if (versionSignatures.has(version.firma)) {
         duplicateRows += 1;
         continue;
       }
-      signatures.add(version.signature);
+      versionSignatures.add(version.firma);
       uniqueVersions.push(version);
     }
+
     const current = uniqueVersions.at(-1) || versions.at(-1);
     const resolutions = (resolutionsByEnvio.get(envioId) || [])
-      .sort((a, b) => a.sortMillis - b.sortMillis || a.sourceRow - b.sourceRow);
+      .sort((a, b) => a.ordenFecha - b.ordenFecha || a.filaOrigen - b.filaOrigen);
     const uniqueResolutions = [];
     const resolutionSignatures = new Set();
+
     for (const resolution of resolutions) {
-      if (resolutionSignatures.has(resolution.signature)) continue;
-      resolutionSignatures.add(resolution.signature);
+      if (resolutionSignatures.has(resolution.firma)) continue;
+      resolutionSignatures.add(resolution.firma);
       uniqueResolutions.push(resolution);
     }
+
+    uniqueResolutionCount += uniqueResolutions.length;
     const currentResolution = uniqueResolutions.at(-1) || null;
     const snapshot = studentIndex.get(envioId) || studentIndex.get(current.cedula) || {};
-    const finalStatus = currentResolution?.estadoFinal || current.estado || 'PENDIENTE_REVISION';
+    const preferredNumber = current.tituloPreferidoNumero;
+    const preferredText = preferredNumber ? current[`titulo${preferredNumber}`] : null;
+    const finalTitle = currentResolution?.tituloCorregido
+      || currentResolution?.tituloElegido
+      || preferredText
+      || current.titulo1
+      || current.titulo2
+      || current.titulo3
+      || null;
+
+    const cleanVersions = uniqueVersions.map(({ ordenFecha: _orden, firma: _firma, ...item }) => item);
+    const cleanResolutions = uniqueResolutions.map(({ ordenFecha: _orden, firma: _firma, ...item }) => item);
 
     envios.push(compactObject({
       id: envioId,
       cedula: current.cedula,
+      nombres: current.nombres || snapshot.nombres,
       periodoId: current.periodoId,
-      periodoLabel: current.periodoLabel,
+      periodoNombre: current.periodoNombre,
       carreraId: current.carreraId,
-      estudianteSnapshot: {
-        nombres: current.estudiante || snapshot.nombres,
-        carreraCodigo: snapshot.carreraCodigo,
-        carreraNombre: current.carreraNombre || snapshot.carreraNombre,
-        sede: snapshot.sede,
-        correoInstitucional: snapshot.correoInstitucional,
-        correoPersonal: snapshot.correoPersonal,
-        celular: snapshot.celular
-      },
+      carreraCodigo: snapshot.carreraCodigo,
+      carreraNombre: current.carreraNombre || snapshot.carreraNombre,
+      sede: snapshot.sede,
+      modalidad: snapshot.modalidad,
+      correoInstitucional: snapshot.correoInstitucional,
+      correoPersonal: snapshot.correoPersonal,
+      celular: snapshot.celular,
       telegram: current.telegram,
-      propuestas: current.propuestas,
-      propuestaPreferida: current.propuestaPreferida,
-      estado: finalStatus,
+      titulo1: current.titulo1,
+      titulo2: current.titulo2,
+      titulo3: current.titulo3,
+      tituloPreferidoNumero: preferredNumber,
+      tituloPreferido: preferredText,
+      tituloElegido: currentResolution?.tituloElegido || null,
+      tituloCorregido: currentResolution?.tituloCorregido || null,
+      tituloFinal: finalTitle,
+      estado: currentResolution?.estado || current.estado || 'PENDIENTE_REVISION',
+      observacion: currentResolution?.observacion || current.observacion,
+      coordinador: currentResolution?.coordinador,
+      fechaEnvio: current.fechaEnvio || current.fechaServidor,
+      fechaResolucion: currentResolution?.fechaResolucion || currentResolution?.fechaServidor,
       estadoFirebase: current.estadoFirebase,
       estadoGoogleSheets: current.estadoGoogleSheets,
-      observacion: current.observacion,
-      fechaEnvio: current.fechaEnvio || current.fechaServidor,
-      versionActual: uniqueVersions.length,
-      resolucionActual: currentResolution ? {
-        estado: currentResolution.estadoFinal,
-        tituloElegido: currentResolution.tituloElegido,
-        tituloCorregido: currentResolution.tituloCorregido,
-        observacion: currentResolution.observacion,
-        coordinador: currentResolution.coordinador,
-        fecha: currentResolution.fechaResolucion || currentResolution.fechaServidor
-      } : null,
-      versions: uniqueVersions,
-      resolutions: uniqueResolutions
+      versionActual: cleanVersions.length,
+      resolucionesTotal: cleanResolutions.length,
+      historialVersiones: cleanVersions,
+      historialResoluciones: cleanResolutions,
+      requiereRevision: false
     }));
   }
 
@@ -403,56 +490,63 @@ function analyzeWorkbook(filePath) {
     const cedula = normalizeCedula(pick(row, ['Cédula', 'cedula', 'numeroIdentificacion']));
     const period = normalizePeriod(pick(row, ['Periodo', 'periodoId']));
     if (!cedula) continue;
+
     const id = `${period.id}__${cedula}`;
     if (groups.has(id)) continue;
+
     const estado = normalizeStatus(pick(row, ['Estado']), 'PENDIENTE_REVISION');
     const hasSubmission = normalizeText(pick(row, ['Tiene envío', 'Tiene envio']));
-    if (!hasSubmission.includes('si') && !hasSubmission.includes('sí') && estado === 'PENDIENTE_REVISION') continue;
+    if (!hasSubmission.includes('si') && estado === 'PENDIENTE_REVISION') continue;
+
     const snapshot = studentIndex.get(id) || studentIndex.get(cedula) || {};
+    const relatedResolutions = (resolutionsByEnvio.get(id) || []).map(({ ordenFecha: _orden, firma: _firma, ...item }) => item);
+    const currentResolution = relatedResolutions.at(-1) || null;
+
     envios.push(compactObject({
       id,
       cedula,
+      nombres: cleanString(pick(row, ['Estudiante', 'Nombres'])) || snapshot.nombres,
       periodoId: period.id,
-      periodoLabel: period.label,
+      periodoNombre: period.label,
       carreraId: snapshot.carreraId || `carrera_${stableHash(pick(row, ['Carrera']) || 'sin_carrera')}`,
-      estudianteSnapshot: {
-        nombres: cleanString(pick(row, ['Estudiante', 'Nombres'])) || snapshot.nombres,
-        carreraCodigo: snapshot.carreraCodigo,
-        carreraNombre: cleanString(pick(row, ['Carrera'])) || snapshot.carreraNombre,
-        correoInstitucional: snapshot.correoInstitucional,
-        correoPersonal: snapshot.correoPersonal
-      },
+      carreraCodigo: snapshot.carreraCodigo,
+      carreraNombre: cleanString(pick(row, ['Carrera'])) || snapshot.carreraNombre,
+      correoInstitucional: snapshot.correoInstitucional,
+      correoPersonal: snapshot.correoPersonal,
       telegram: cleanString(pick(row, ['Telegram'])),
-      propuestas: [],
-      estado,
+      tituloElegido: currentResolution?.tituloElegido,
+      tituloCorregido: currentResolution?.tituloCorregido,
+      tituloFinal: currentResolution?.tituloCorregido || currentResolution?.tituloElegido || null,
+      estado: currentResolution?.estado || estado,
+      observacion: currentResolution?.observacion,
+      coordinador: currentResolution?.coordinador,
+      fechaResolucion: currentResolution?.fechaResolucion,
       versionActual: 0,
+      resolucionesTotal: relatedResolutions.length,
+      historialVersiones: [],
+      historialResoluciones: relatedResolutions,
       datosIncompletosOrigen: true,
-      requiereRevision: true,
-      versions: [],
-      resolutions: resolutionsByEnvio.get(id) || []
+      requiereRevision: true
     }));
-    warnings.push(`Se recuperó ${id} desde Estudiantes, pero no tiene propuestas completas en Envios.`);
+
+    warnings.push(`Se recuperó ${id} desde Estudiantes, pero no tiene los tres títulos completos en Envios.`);
   }
 
   const coordinators = new Map();
   for (const row of coordinadoresRows) {
     const name = cleanString(pick(row, ['Coordinador']));
     if (!name) continue;
+
     const id = cleanString(pick(row, ['ID registro'])) || slug(name);
     const careerNames = String(pick(row, ['Carreras']) || '')
       .split('|')
       .map((item) => item.trim())
       .filter(Boolean);
-    const careerIds = careerNames.map((careerName) => {
-      const normalizedName = normalizeText(careerName);
-      let careerId = careerByName.get(normalizedName);
-      if (!careerId) {
-        careerId = `carrera_${stableHash(careerName)}`;
-        careers.set(careerId, { id: careerId, codigo: null, nombre: careerName, activo: true });
-        careerByName.set(normalizedName, careerId);
-      }
-      return careerId;
-    });
+
+    const careerIds = careerNames
+      .map((careerName) => careerByName.get(normalizeText(careerName)))
+      .filter(Boolean);
+
     coordinators.set(id, compactObject({
       id,
       nombre: name,
@@ -467,224 +561,382 @@ function analyzeWorkbook(filePath) {
   const latestPeriod = [...periods.values()].sort((a, b) => a.id.localeCompare(b.id)).at(-1);
   if (latestPeriod) latestPeriod.activo = true;
 
-  const summary = {
-    archivo: path.basename(filePath),
-    enviosOriginales: enviosRows.length,
-    enviosConsolidados: envios.length,
-    filasDuplicadas: duplicateRows,
-    resolucionesOriginales: resolucionesRows.length,
-    resolucionesUnicas: envios.reduce((total, item) => total + item.resolutions.length, 0),
-    coordinadores: coordinators.size,
-    periodos: periods.size,
-    carreras: careers.size,
-    advertencias: warnings.length
-  };
-
   return {
+    type: 'titulos',
+    typeLabel: 'Respaldo de títulos',
     sourcePath: filePath,
     analyzedAt: new Date().toISOString(),
-    summary,
     periods: [...periods.values()],
     careers: [...careers.values()],
     coordinators: [...coordinators.values()],
     envios,
     warnings: warnings.slice(0, 100),
-    preview: envios.slice(0, 30).map((item) => ({
-      cedula: item.cedula,
-      estudiante: item.estudianteSnapshot?.nombres || 'Sin nombre',
-      periodo: item.periodoLabel,
-      carrera: item.estudianteSnapshot?.carreraNombre || 'Sin carrera',
-      estado: item.estado,
-      versiones: item.versionActual,
-      resoluciones: item.resolutions.length
-    }))
+    summary: {
+      archivo: path.basename(filePath),
+      enviosOriginales: enviosRows.length,
+      enviosConsolidados: envios.length,
+      filasDuplicadas: duplicateRows,
+      resolucionesOriginales: resolucionesRows.length,
+      resolucionesUnicas: uniqueResolutionCount,
+      coordinadores: coordinators.size,
+      periodos: periods.size,
+      carreras: careers.size,
+      advertencias: warnings.length
+    },
+    metrics: [
+      { label: 'Filas de envíos', value: enviosRows.length },
+      { label: 'Envíos organizados', value: envios.length },
+      { label: 'Resoluciones únicas', value: uniqueResolutionCount },
+      { label: 'Duplicados descartados', value: duplicateRows }
+    ],
+    collections: [
+      { name: 'periodos', count: periods.size },
+      { name: 'carreras', count: careers.size },
+      { name: 'coordinadores', count: coordinators.size },
+      { name: 'envios', count: envios.length },
+      { name: 'configuracion', count: 1 },
+      { name: 'migraciones', count: 1 }
+    ],
+    previewHeaders: ['Cédula', 'Estudiante', 'Periodo', 'Estado'],
+    previewRows: envios.slice(0, 40).map((item) => [
+      item.cedula,
+      item.nombres || 'Sin nombre',
+      item.periodoNombre || 'Sin periodo',
+      item.estado
+    ])
   };
 }
 
-function findServiceAccount(sourcePath) {
-  const directories = [
-    path.dirname(sourcePath),
-    app.getPath('userData'),
-    path.dirname(app.getPath('exe')),
-    process.resourcesPath
-  ];
-  const exactNames = ['firebase-admin.json', 'titulos-admin.json', 'service-account.json'];
+function analyzeKeysWorkbook(filePath, workbook) {
+  const iaRows = sheetRows(workbook, 'IA');
+  const serviceRows = sheetRows(workbook, 'Servicios');
+  const configRows = sheetRows(workbook, 'Configuracion');
 
-  for (const directory of [...new Set(directories)]) {
-    if (!directory || !fs.existsSync(directory)) continue;
-    for (const fileName of exactNames) {
-      const candidate = path.join(directory, fileName);
-      if (fs.existsSync(candidate)) return candidate;
+  const ia = iaRows
+    .map((row, index) => {
+      const id = cleanString(pick(row, ['id'])) || `ia_${index + 1}`;
+      if (!cleanString(pick(row, ['nombre'])) && !cleanString(pick(row, ['credencial']))) return null;
+      return compactObject({
+        id: slug(id) || `ia_${index + 1}`,
+        nombre: cleanString(pick(row, ['nombre'])),
+        tipo: cleanString(pick(row, ['tipo'])),
+        endpoint: cleanString(pick(row, ['endpoint'])),
+        modelo: cleanString(pick(row, ['modelo'])),
+        credencial: cleanString(pick(row, ['credencial'])),
+        estado: normalizeStatus(pick(row, ['estado']), 'ACTIVO'),
+        prioridad: Number(pick(row, ['prioridad'])) || null,
+        timeoutMs: Number(pick(row, ['timeoutMs'])) || null,
+        maxTokens: Number(pick(row, ['maxTokens'])) || null,
+        temperatura: Number(pick(row, ['temperatura'])) || 0,
+        descripcion: cleanString(pick(row, ['descripcion'])),
+        ultimaPruebaOk: Boolean(pick(row, ['ultimaPruebaOk'])),
+        ultimaPruebaEn: excelDateToIso(pick(row, ['ultimaPruebaEn'])),
+        ultimaLatenciaMs: Number(pick(row, ['ultimaLatenciaMs'])) || null,
+        ultimoError: cleanString(pick(row, ['ultimoError'])),
+        actualizadoEnOrigen: excelDateToIso(pick(row, ['actualizadoEn']))
+      });
+    })
+    .filter(Boolean);
+
+  const services = serviceRows
+    .map((row, index) => {
+      const key = cleanString(pick(row, ['clave'])) || `servicio_${index + 1}`;
+      if (!cleanString(pick(row, ['nombre'])) && !cleanString(pick(row, ['endpoint']))) return null;
+      return compactObject({
+        id: slug(key) || `servicio_${index + 1}`,
+        clave: key,
+        nombre: cleanString(pick(row, ['nombre'])),
+        tipo: cleanString(pick(row, ['tipo'])),
+        endpoint: cleanString(pick(row, ['endpoint'])),
+        secreto: cleanString(pick(row, ['secreto'])),
+        spreadsheetId: cleanString(pick(row, ['spreadsheetId'])),
+        estado: normalizeStatus(pick(row, ['estado']), 'ACTIVO'),
+        timeoutMs: Number(pick(row, ['timeoutMs'])) || null,
+        version: cleanString(pick(row, ['version'])),
+        mensaje: cleanString(pick(row, ['mensaje'])),
+        actualizadoEnOrigen: excelDateToIso(pick(row, ['actualizadoEn']))
+      });
+    })
+    .filter(Boolean);
+
+  const configurations = configRows
+    .map((row, index) => {
+      const key = cleanString(pick(row, ['clave'])) || `config_${index + 1}`;
+      const value = pick(row, ['valor']);
+      if (!cleanString(key) || value == null || value === '') return null;
+      return compactObject({
+        id: slug(key) || `config_${index + 1}`,
+        clave: key,
+        valor: normalizeCellValue(value),
+        descripcion: cleanString(pick(row, ['descripcion'])),
+        actualizadoEnOrigen: excelDateToIso(pick(row, ['actualizadoEn']))
+      });
+    })
+    .filter(Boolean);
+
+  const credentialsCount = ia.filter((item) => item.credencial).length
+    + services.filter((item) => item.secreto).length
+    + configurations.filter((item) => /acceso|clave|token|secret/i.test(item.clave)).length;
+
+  return {
+    type: 'claves',
+    typeLabel: 'Claves y configuración de IA',
+    sourcePath: filePath,
+    analyzedAt: new Date().toISOString(),
+    ia,
+    services,
+    configurations,
+    warnings: [],
+    summary: {
+      archivo: path.basename(filePath),
+      proveedoresIA: ia.length,
+      servicios: services.length,
+      configuraciones: configurations.length,
+      credenciales: credentialsCount
+    },
+    metrics: [
+      { label: 'Proveedores IA', value: ia.length },
+      { label: 'Servicios', value: services.length },
+      { label: 'Configuraciones', value: configurations.length },
+      { label: 'Claves incluidas', value: credentialsCount }
+    ],
+    collections: [
+      { name: 'ia', count: ia.length },
+      { name: 'servicios', count: services.length },
+      { name: 'configuracion', count: configurations.length },
+      { name: 'migraciones', count: 1 }
+    ],
+    previewHeaders: ['ID', 'Proveedor', 'Modelo o tipo', 'Estado'],
+    previewRows: ia.map((item) => [
+      item.id,
+      item.nombre || 'Sin nombre',
+      item.modelo || item.tipo || 'Sin modelo',
+      item.estado || 'SIN_ESTADO'
+    ])
+  };
+}
+
+function analyzeSelectedWorkbook(filePath) {
+  const workbook = readWorkbook(filePath);
+  const type = detectWorkbookType(workbook);
+  if (type === 'titulos') return analyzeTitlesWorkbook(filePath, workbook);
+  if (type === 'claves') return analyzeKeysWorkbook(filePath, workbook);
+  throw new Error('El Excel no corresponde al respaldo de títulos ni al archivo de claves de IA.');
+}
+
+function serializeFirestoreValue(value) {
+  if (value == null) return value;
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) return value.map(serializeFirestoreValue);
+  if (typeof value === 'object') {
+    if (typeof value.toDate === 'function') {
+      try {
+        return value.toDate().toISOString();
+      } catch (_error) {
+        return String(value);
+      }
     }
-    const generated = fs.readdirSync(directory).find((name) => /^titulos-ec2fa-firebase-adminsdk.*\.json$/i.test(name));
-    if (generated) return path.join(directory, generated);
+    const output = {};
+    for (const [key, item] of Object.entries(value)) output[key] = serializeFirestoreValue(item);
+    return output;
   }
-  return null;
+  return value;
 }
 
-function loadServiceAccount(sourcePath) {
-  const accountPath = findServiceAccount(sourcePath);
-  if (!accountPath) {
-    throw new Error('No se encontró firebase-admin.json. Descarga la clave privada de Cuentas de servicio, renómbrala firebase-admin.json y colócala en la misma carpeta del Excel.');
-  }
-  const data = JSON.parse(fs.readFileSync(accountPath, 'utf8'));
-  if (data.project_id !== TARGET_PROJECT_ID) {
-    throw new Error(`La cuenta de servicio pertenece a ${data.project_id || 'otro proyecto'}, no a ${TARGET_PROJECT_ID}.`);
-  }
-  return { data, accountPath };
+async function getClientDatabase() {
+  const { initializeApp: initializeClientApp, getApps: getClientApps } = require('firebase/app');
+  const { getFirestore } = require('firebase/firestore');
+  const appName = 'titulos-migrador-web';
+  const clientApp = getClientApps().find((item) => item.name === appName)
+    || initializeClientApp(FIREBASE_CONFIG, appName);
+  return getFirestore(clientApp);
 }
 
-function getAdminApp(serviceAccount) {
-  const existing = getApps().find((item) => item.name === 'titulos-migrador');
-  if (existing) return existing;
-  return initializeApp({ credential: cert(serviceAccount) }, 'titulos-migrador');
-}
+async function createLocalBackup(db, result, migrationId) {
+  const { doc, getDoc } = require('firebase/firestore');
+  const documents = [];
+  const targets = [];
 
-async function backupExisting(db, envios, migrationId, sourcePath) {
-  const backup = [];
-  let processed = 0;
-  for (const item of envios) {
-    const snapshot = await db.collection('envios').doc(item.id).get();
-    if (snapshot.exists) backup.push({ id: item.id, data: snapshot.data() });
-    processed += 1;
-    if (processed % 10 === 0) sendProgress(48 + Math.round((processed / envios.length) * 7), `Preparando respaldo: ${processed}/${envios.length}`);
+  if (result.type === 'titulos') {
+    for (const item of result.envios) targets.push(['envios', item.id]);
+  } else {
+    for (const item of result.ia) targets.push(['ia', item.id]);
+    for (const item of result.services) targets.push(['servicios', item.id]);
+    for (const item of result.configurations) targets.push(['configuracion', item.id]);
   }
-  const backupFolder = path.join(path.dirname(sourcePath), 'backups_migracion');
+
+  for (let index = 0; index < targets.length; index += 1) {
+    const [collectionName, documentId] = targets[index];
+    const snapshot = await getDoc(doc(db, collectionName, documentId));
+    if (snapshot.exists()) {
+      documents.push({
+        path: `${collectionName}/${documentId}`,
+        data: serializeFirestoreValue(snapshot.data())
+      });
+    }
+
+    if ((index + 1) % 10 === 0 || index + 1 === targets.length) {
+      sendProgress(
+        47 + Math.round(((index + 1) / Math.max(targets.length, 1)) * 7),
+        `Preparando respaldo: ${index + 1}/${targets.length}`
+      );
+    }
+  }
+
+  const backupFolder = path.join(path.dirname(result.sourcePath), 'backups_migracion');
   fs.mkdirSync(backupFolder, { recursive: true });
   const backupPath = path.join(backupFolder, `${migrationId}.json`);
-  fs.writeFileSync(backupPath, JSON.stringify({ migrationId, createdAt: new Date().toISOString(), documents: backup }, null, 2));
-  return { backupPath, total: backup.length };
-}
+  fs.writeFileSync(backupPath, JSON.stringify({
+    migrationId,
+    tipo: result.type,
+    createdAt: new Date().toISOString(),
+    documents
+  }, null, 2));
 
-function addBulkErrorHandling(writer, errors) {
-  writer.onWriteError((error) => {
-    errors.push({ code: error.code, message: error.message, path: error.documentRef?.path || null });
-    return error.failedAttempts < 3;
-  });
+  return { backupPath, total: documents.length };
 }
 
 async function migrateToFirestore(result) {
-  const { data: serviceAccount, accountPath } = loadServiceAccount(result.sourcePath);
-  const adminApp = getAdminApp(serviceAccount);
-  const db = getFirestore(adminApp);
+  const { doc, setDoc, writeBatch, serverTimestamp } = require('firebase/firestore');
+  const db = await getClientDatabase();
   const migrationId = `MIG_${new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14)}`;
-  const errors = [];
+  const migrationRef = doc(db, 'migraciones', migrationId);
 
-  sendProgress(42, 'Conectando con Firestore…');
-  await db.collection('migraciones').doc(migrationId).set({
-    estado: 'EJECUTANDO',
-    archivoOrigen: path.basename(result.sourcePath),
-    iniciadoEn: FieldValue.serverTimestamp(),
-    resumenAnalisis: result.summary
-  });
+  try {
+    sendProgress(42, 'Conectando directamente con Firestore…');
+    await setDoc(migrationRef, {
+      estado: 'EJECUTANDO',
+      tipo: result.type,
+      archivoOrigen: path.basename(result.sourcePath),
+      proyectoDestino: TARGET_PROJECT_ID,
+      iniciadoEn: serverTimestamp(),
+      resumenAnalisis: result.summary
+    }, { merge: true });
 
-  sendProgress(48, 'Creando respaldo de documentos existentes…');
-  const backup = await backupExisting(db, result.envios, migrationId, result.sourcePath);
+    sendProgress(47, 'Creando respaldo local de los documentos que se actualizarán…');
+    const backup = await createLocalBackup(db, result, migrationId);
 
-  const writer = db.bulkWriter();
-  addBulkErrorHandling(writer, errors);
-  let totalWrites = result.periods.length + result.careers.length + result.coordinators.length + result.envios.length;
-  totalWrites += result.envios.reduce((total, item) => total + item.versions.length + item.resolutions.length, 0);
-  totalWrites += 2;
-  let queued = 0;
-
-  const queueSet = (ref, data, options = { merge: true }) => {
-    writer.set(ref, data, options);
-    queued += 1;
-    if (queued % 25 === 0 || queued === totalWrites) {
-      sendProgress(56 + Math.round((queued / totalWrites) * 40), `Subiendo ${queued}/${totalWrites} documentos…`);
-    }
-  };
-
-  for (const period of result.periods) {
-    queueSet(db.collection('periodos').doc(period.id), {
-      ...period,
-      actualizadoEn: FieldValue.serverTimestamp(),
-      migracionId
-    });
-  }
-
-  for (const career of result.careers) {
-    queueSet(db.collection('carreras').doc(career.id), {
-      ...career,
-      actualizadoEn: FieldValue.serverTimestamp(),
-      migracionId
-    });
-  }
-
-  for (const coordinator of result.coordinators) {
-    queueSet(db.collection('coordinadores').doc(coordinator.id), {
-      ...coordinator,
-      actualizadoEn: FieldValue.serverTimestamp(),
-      migracionId
-    });
-  }
-
-  for (const envio of result.envios) {
-    const envioRef = db.collection('envios').doc(envio.id);
-    const { versions, resolutions, id: _envioId, ...envioData } = envio;
-    queueSet(envioRef, {
-      ...envioData,
-      actualizadoEn: FieldValue.serverTimestamp(),
-      migracion: {
-        id: migrationId,
-        archivoOrigen: path.basename(result.sourcePath),
-        migradoEn: FieldValue.serverTimestamp()
+    const writes = [];
+    if (result.type === 'titulos') {
+      for (const period of result.periods) {
+        writes.push(['periodos', period.id, { ...period, migracionId, actualizadoEn: serverTimestamp() }]);
       }
-    });
+      for (const career of result.careers) {
+        writes.push(['carreras', career.id, { ...career, migracionId, actualizadoEn: serverTimestamp() }]);
+      }
+      for (const coordinator of result.coordinators) {
+        writes.push(['coordinadores', coordinator.id, { ...coordinator, migracionId, actualizadoEn: serverTimestamp() }]);
+      }
+      for (const envio of result.envios) {
+        const { id, ...data } = envio;
+        writes.push(['envios', id, {
+          ...data,
+          migracionId,
+          archivoOrigen: path.basename(result.sourcePath),
+          migradoEn: serverTimestamp(),
+          actualizadoEn: serverTimestamp()
+        }]);
+      }
+      writes.push(['configuracion', 'general', {
+        proyectoId: TARGET_PROJECT_ID,
+        ultimaMigracionId: migrationId,
+        ultimaMigracionEn: serverTimestamp(),
+        periodoActivoId: result.periods.find((item) => item.activo)?.id || null,
+        enviosHabilitados: true
+      }]);
+    } else {
+      for (const provider of result.ia) {
+        const { id, ...data } = provider;
+        writes.push(['ia', id, {
+          ...data,
+          migracionId,
+          archivoOrigen: path.basename(result.sourcePath),
+          actualizadoEn: serverTimestamp()
+        }]);
+      }
+      for (const service of result.services) {
+        const { id, ...data } = service;
+        writes.push(['servicios', id, {
+          ...data,
+          migracionId,
+          archivoOrigen: path.basename(result.sourcePath),
+          actualizadoEn: serverTimestamp()
+        }]);
+      }
+      for (const configuration of result.configurations) {
+        const { id, ...data } = configuration;
+        writes.push(['configuracion', id, {
+          ...data,
+          migracionId,
+          archivoOrigen: path.basename(result.sourcePath),
+          actualizadoEn: serverTimestamp()
+        }]);
+      }
+    }
 
-    versions.forEach((version, index) => {
-      const versionId = version.sourceId ? slug(version.sourceId) : `version_${String(index + 1).padStart(3, '0')}_${version.signature}`;
-      const { sortMillis: _sortMillis, signature: _signature, ...versionData } = version;
-      queueSet(envioRef.collection('versiones').doc(versionId), {
-        ...versionData,
-        numeroVersion: index + 1,
-        migracionId
-      });
-    });
+    let batch = writeBatch(db);
+    let pendingInBatch = 0;
+    let processed = 0;
 
-    resolutions.forEach((resolution, index) => {
-      const resolutionId = resolution.sourceId ? slug(resolution.sourceId) : `resolucion_${String(index + 1).padStart(3, '0')}_${resolution.signature}`;
-      const { sortMillis: _sortMillis, signature: _signature, ...resolutionData } = resolution;
-      queueSet(envioRef.collection('resoluciones').doc(resolutionId), {
-        ...resolutionData,
-        numeroResolucion: index + 1,
-        migracionId
-      });
-    });
+    const flush = async () => {
+      if (!pendingInBatch) return;
+      await batch.commit();
+      batch = writeBatch(db);
+      pendingInBatch = 0;
+    };
+
+    for (const [collectionName, documentId, data] of writes) {
+      batch.set(doc(db, collectionName, documentId), compactObject(data), { merge: true });
+      pendingInBatch += 1;
+      processed += 1;
+      sendProgress(
+        56 + Math.round((processed / Math.max(writes.length, 1)) * 40),
+        `Subiendo ${processed}/${writes.length} documentos…`
+      );
+      if (pendingInBatch >= 400) await flush();
+    }
+
+    await flush();
+
+    await setDoc(migrationRef, {
+      estado: 'COMPLETADA',
+      finalizadoEn: serverTimestamp(),
+      tipo: result.type,
+      archivoOrigen: path.basename(result.sourcePath),
+      resumen: result.summary,
+      documentosProgramados: writes.length,
+      respaldoLocal: backup.backupPath,
+      documentosRespaldados: backup.total,
+      errores: []
+    }, { merge: true });
+
+    sendProgress(100, 'Migración completada correctamente.', 'success');
+    return {
+      migrationId,
+      migrationType: result.type,
+      projectId: TARGET_PROJECT_ID,
+      totalWrites: writes.length,
+      backupPath: backup.backupPath,
+      errors: []
+    };
+  } catch (error) {
+    try {
+      await setDoc(migrationRef, {
+        estado: 'ERROR',
+        finalizadoEn: serverTimestamp(),
+        error: error?.message || String(error)
+      }, { merge: true });
+    } catch (_secondaryError) {
+      // Conservar el error original.
+    }
+
+    const message = error?.code === 'permission-denied'
+      ? 'Firestore rechazó la escritura. Verifica que las reglas publicadas permitan read y write.'
+      : (error?.message || String(error));
+
+    sendProgress(0, 'La migración no pudo completarse.', 'error');
+    throw new Error(message);
   }
-
-  queueSet(db.collection('configuracion').doc('general'), {
-    proyectoId: TARGET_PROJECT_ID,
-    ultimaMigracionId: migrationId,
-    ultimaMigracionEn: FieldValue.serverTimestamp(),
-    periodoActivoId: result.periods.find((item) => item.activo)?.id || null,
-    enviosHabilitados: true
-  });
-
-  await writer.close();
-
-  const finalState = errors.length ? 'COMPLETADA_CON_ERRORES' : 'COMPLETADA';
-  await db.collection('migraciones').doc(migrationId).set({
-    estado: finalState,
-    finalizadoEn: FieldValue.serverTimestamp(),
-    archivoOrigen: path.basename(result.sourcePath),
-    resumen: result.summary,
-    documentosProgramados: totalWrites,
-    respaldoLocal: backup.backupPath,
-    documentosRespaldados: backup.total,
-    errores: errors.slice(0, 100)
-  }, { merge: true });
-
-  sendProgress(100, errors.length ? `Migración terminada con ${errors.length} errores.` : 'Migración completada correctamente.', errors.length ? 'warning' : 'success');
-  return {
-    migrationId,
-    projectId: TARGET_PROJECT_ID,
-    credentialFile: path.basename(accountPath),
-    totalWrites,
-    backupPath: backup.backupPath,
-    errors
-  };
 }
 
 ipcMain.handle('excel:seleccionar', async () => {
@@ -693,39 +945,48 @@ ipcMain.handle('excel:seleccionar', async () => {
     properties: ['openFile'],
     filters: [{ name: 'Archivos Excel', extensions: ['xlsx', 'xls'] }]
   });
-  if (result.canceled || !result.filePaths[0]) return null;
 
-  const resolved = resolveBackupPath(result.filePaths[0]);
-  selectedExcelPath = resolved;
+  if (result.canceled || !result.filePaths[0]) return null;
+  const filePath = result.filePaths[0];
+  const workbook = readWorkbook(filePath);
+  const type = detectWorkbookType(workbook);
+
+  if (!type) {
+    throw new Error('El archivo no contiene las hojas necesarias de títulos ni las hojas de claves de IA.');
+  }
+
+  selectedExcelPath = filePath;
+  selectedWorkbookType = type;
   analysisResult = null;
+
   return {
-    selectedName: path.basename(result.filePaths[0]),
-    sourceName: path.basename(resolved),
-    sourcePath: resolved,
-    autoDetected: path.resolve(resolved) !== path.resolve(result.filePaths[0])
+    selectedName: path.basename(filePath),
+    sourceName: path.basename(filePath),
+    sourcePath: filePath,
+    type,
+    typeLabel: type === 'titulos' ? 'Respaldo de títulos' : 'Claves y configuración de IA'
   };
 });
 
 ipcMain.handle('excel:analizar', async () => {
-  if (!selectedExcelPath) throw new Error('Primero selecciona uno de los archivos Excel.');
-  sendProgress(8, 'Leyendo hojas del respaldo…');
+  if (!selectedExcelPath || !selectedWorkbookType) {
+    throw new Error('Primero selecciona uno de los archivos Excel.');
+  }
+
+  sendProgress(8, 'Leyendo y organizando el Excel…');
   await new Promise((resolve) => setTimeout(resolve, 50));
-  analysisResult = analyzeWorkbook(selectedExcelPath);
+  analysisResult = analyzeSelectedWorkbook(selectedExcelPath);
   sendProgress(100, 'Análisis completado. Ya puedes subir a Firestore.', 'success');
+
   return {
+    type: analysisResult.type,
+    typeLabel: analysisResult.typeLabel,
     summary: analysisResult.summary,
+    metrics: analysisResult.metrics,
+    collections: analysisResult.collections,
     warnings: analysisResult.warnings,
-    preview: analysisResult.preview,
-    collections: [
-      { name: 'periodos', count: analysisResult.periods.length },
-      { name: 'carreras', count: analysisResult.careers.length },
-      { name: 'coordinadores', count: analysisResult.coordinators.length },
-      { name: 'envios', count: analysisResult.envios.length },
-      { name: 'versiones', count: analysisResult.envios.reduce((sum, item) => sum + item.versions.length, 0) },
-      { name: 'resoluciones', count: analysisResult.envios.reduce((sum, item) => sum + item.resolutions.length, 0) },
-      { name: 'migraciones', count: 1 }
-    ],
-    credentialDetected: Boolean(findServiceAccount(selectedExcelPath))
+    previewHeaders: analysisResult.previewHeaders,
+    previewRows: analysisResult.previewRows
   };
 });
 
