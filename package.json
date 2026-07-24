@@ -1,8 +1,8 @@
 {
   "name": "migrador-titulos",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Migración automática desde Excel hacia Firestore titulos-ec2fa.",
-  "main": "bootstrap.js",
+  "main": "launcher.js",
   "private": true,
   "scripts": {
     "start": "electron .",
@@ -22,6 +22,7 @@
     "productName": "Migrador de Títulos",
     "asar": true,
     "files": [
+      "launcher.js",
       "bootstrap.js",
       "main.js",
       "preload.js",
