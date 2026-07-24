@@ -1,6 +1,26 @@
 # Migrador de Títulos
 
-Aplicación local de escritorio para analizar un respaldo Excel, relacionar los envíos con la Firebase oficial de estudiantes y migrar la información propia de titulación hacia Cloud Firestore.
+Aplicación local con un flujo único:
+
+1. Seleccionar cualquiera de los Excel de la carpeta.
+2. Pulsar **Analizar**.
+3. Pulsar **Subir a Firestore**.
+
+La aplicación detecta automáticamente el archivo que contiene las hojas `Envios`, `Resoluciones` y `Coordinadores`. El destino está fijado al proyecto `titulos-ec2fa`.
+
+## Preparación única y segura
+
+La configuración web de Firebase identifica el proyecto, pero no autoriza una migración administrativa. Descarga una clave privada desde:
+
+`Firebase → Configuración del proyecto → Cuentas de servicio → Generar nueva clave privada`
+
+Renombra el archivo como:
+
+```text
+firebase-admin.json
+```
+
+Colócalo en la misma carpeta que los Excel. La app lo detectará automáticamente y no mostrará campos adicionales.
 
 ## Ejecutar
 
@@ -9,29 +29,21 @@ npm install
 npm start
 ```
 
-## Crear instalador y versión portable
+## Crear ejecutables de Windows
 
 ```powershell
 npm run dist
 ```
 
-Los ejecutables se generan en `dist`.
-
-## Flujo
-
-1. Seleccionar el respaldo Excel.
-2. Configurar la Firebase de estudiantes y su cuenta de servicio.
-3. Analizar, normalizar y revisar inconsistencias.
-4. Seleccionar la cuenta de servicio del Firestore de destino.
-5. Exportar el informe o ejecutar la migración.
-
-La aplicación no guarda cuentas de servicio en el repositorio. Antes de escribir crea un respaldo local de los documentos `envios` que ya existan.
-
-## Colecciones de destino
+## Colecciones
 
 - `periodos`
+- `carreras`
 - `coordinadores`
 - `envios`
 - `envios/{id}/versiones`
 - `envios/{id}/resoluciones`
+- `configuracion`
 - `migraciones`
+
+La app no elimina documentos. Antes de actualizar envíos existentes genera un respaldo en `backups_migracion` junto al Excel.
