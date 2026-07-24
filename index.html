@@ -60,7 +60,6 @@
     .target strong { display: block; color: #fff; font-size: 15px; margin-top: 3px; }
 
     main { width: min(1320px, calc(100% - 48px)); margin: 24px auto 46px; }
-
     .mode-tabs {
       display: flex;
       gap: 8px;
@@ -80,7 +79,6 @@
       box-shadow: none;
     }
     .mode-tab.active { background: var(--navy); color: white; }
-
     .view { display: none; }
     .view.active { display: block; }
 
@@ -109,6 +107,7 @@
       box-shadow: var(--shadow);
       padding: 26px;
     }
+    .panel + .panel { margin-top: 20px; }
 
     .upload-panel {
       display: grid;
@@ -116,9 +115,8 @@
       gap: 22px;
       align-items: center;
     }
-
-    .upload-panel h3 { margin: 0 0 7px; font-size: 20px; }
-    .upload-panel p { margin: 0; color: var(--muted); line-height: 1.5; }
+    .upload-panel h3, .viewer-toolbar h3, .correction-toolbar h3 { margin: 0 0 7px; }
+    .upload-panel p, .viewer-toolbar p, .correction-toolbar p { margin: 0; color: var(--muted); line-height: 1.5; }
     .file-box {
       margin-top: 18px;
       min-height: 68px;
@@ -132,18 +130,8 @@
     }
     .file-icon { font-size: 28px; }
     .file-data { min-width: 0; }
-    .file-data strong {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .file-data span {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 4px;
-    }
+    .file-data strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-data span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
 
     button {
       border: 0;
@@ -156,83 +144,36 @@
     }
     button:hover:not(:disabled) { transform: translateY(-1px); }
     button:disabled { opacity: .45; cursor: not-allowed; }
-    .primary {
-      color: white;
-      background: var(--navy);
-      box-shadow: 0 8px 18px rgba(11,52,88,.18);
-    }
+    .primary { color: white; background: var(--navy); box-shadow: 0 8px 18px rgba(11,52,88,.18); }
     .secondary { color: var(--navy); background: var(--blue-soft); }
-    .success {
-      color: white;
-      background: var(--green);
-      box-shadow: 0 8px 18px rgba(23,134,91,.18);
-    }
-    .actions {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      min-width: 200px;
-    }
+    .success { color: white; background: var(--green); box-shadow: 0 8px 18px rgba(23,134,91,.18); }
+    .danger { color: white; background: var(--red); }
+    .actions { display: flex; flex-direction: column; gap: 10px; min-width: 200px; }
 
     .progress-wrap { margin-top: 18px; }
-    .progress-meta {
-      display: flex;
-      justify-content: space-between;
-      gap: 15px;
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }
-    .progress {
-      height: 9px;
-      border-radius: 999px;
-      overflow: hidden;
-      background: #e8eef4;
-    }
-    .progress > div {
-      height: 100%;
-      width: 0;
-      background: var(--navy-2);
-      transition: width .22s ease, background .22s ease;
-    }
+    .progress-meta { display: flex; justify-content: space-between; gap: 15px; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+    .progress { height: 9px; border-radius: 999px; overflow: hidden; background: #e8eef4; }
+    .progress > div { height: 100%; width: 0; background: var(--navy-2); transition: width .22s ease, background .22s ease; }
 
     #results { display: none; margin-top: 22px; }
-    .metrics {
+    .metrics, .firebase-summary, .correction-summary {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 14px;
-      margin-bottom: 18px;
+      margin: 20px 0;
     }
-    .metric {
+    .metric, .summary-card {
       padding: 18px;
       border: 1px solid var(--line);
       border-radius: 16px;
       background: #fbfdff;
     }
-    .metric span {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 8px;
-    }
-    .metric strong { font-size: 26px; }
+    .metric span, .summary-card span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    .metric strong, .summary-card strong { font-size: 25px; }
 
-    .collections {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 9px;
-      margin: 13px 0 22px;
-    }
-    .collection-chip {
-      background: var(--blue-soft);
-      color: var(--navy);
-      border-radius: 999px;
-      padding: 8px 12px;
-      font-size: 13px;
-      font-weight: 650;
-    }
-    .structure-note,
-    .sensitive-note {
+    .collections { display: flex; flex-wrap: wrap; gap: 9px; margin: 13px 0 22px; }
+    .collection-chip { background: var(--blue-soft); color: var(--navy); border-radius: 999px; padding: 8px 12px; font-size: 13px; font-weight: 650; }
+    .structure-note, .sensitive-note {
       margin: 0 0 18px;
       padding: 13px 15px;
       border-radius: 13px;
@@ -241,65 +182,21 @@
     .structure-note { background: var(--green-soft); color: var(--green); }
     .sensitive-note { background: var(--amber-soft); color: var(--amber); }
 
-    .result-grid {
-      display: grid;
-      grid-template-columns: 1.7fr 1fr;
-      gap: 18px;
-    }
-    .subpanel {
-      border: 1px solid var(--line);
-      border-radius: 17px;
-      overflow: hidden;
-    }
-    .subpanel h4 {
-      margin: 0;
-      padding: 15px 17px;
-      background: #f8fbfe;
-      border-bottom: 1px solid var(--line);
-    }
-    .table-wrap { max-height: 430px; overflow: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td {
-      text-align: left;
-      padding: 11px 13px;
-      border-bottom: 1px solid #edf1f5;
-      vertical-align: top;
-      white-space: nowrap;
-    }
-    th {
-      position: sticky;
-      top: 0;
-      background: #fff;
-      color: var(--muted);
-      z-index: 1;
-    }
-    td { max-width: 340px; overflow: hidden; text-overflow: ellipsis; }
-    .badge {
-      display: inline-block;
-      border-radius: 999px;
-      padding: 5px 8px;
-      font-size: 11px;
-      font-weight: 750;
-      background: var(--blue-soft);
-      color: var(--navy);
-    }
-    .warnings {
-      padding: 14px 17px;
-      max-height: 360px;
-      overflow: auto;
-    }
-    .warning {
-      margin-bottom: 9px;
-      padding: 10px 12px;
-      border-radius: 11px;
-      background: var(--amber-soft);
-      color: var(--amber);
-      font-size: 12px;
-      line-height: 1.4;
-    }
-    .ok-box,
-    .error-box,
-    .viewer-message {
+    .result-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 18px; }
+    .subpanel { border: 1px solid var(--line); border-radius: 17px; overflow: hidden; }
+    .subpanel h4 { margin: 0; padding: 15px 17px; background: #f8fbfe; border-bottom: 1px solid var(--line); }
+    .table-wrap, .firebase-table-wrap, .correction-table-wrap { max-height: 520px; overflow: auto; border: 1px solid var(--line); border-radius: 16px; }
+    .subpanel .table-wrap { border: 0; border-radius: 0; max-height: 430px; }
+    table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 11px 13px; border-bottom: 1px solid #edf1f5; vertical-align: top; white-space: nowrap; }
+    th { position: sticky; top: 0; background: #fff; color: var(--muted); z-index: 1; }
+    td { max-width: 360px; overflow: hidden; text-overflow: ellipsis; }
+    .wrap-cell { white-space: normal; min-width: 220px; max-width: 420px; }
+    .badge { display: inline-block; border-radius: 999px; padding: 5px 8px; font-size: 11px; font-weight: 750; background: var(--blue-soft); color: var(--navy); }
+    .warnings { padding: 14px 17px; max-height: 360px; overflow: auto; }
+    .warning { margin-bottom: 9px; padding: 10px 12px; border-radius: 11px; background: var(--amber-soft); color: var(--amber); font-size: 12px; line-height: 1.4; }
+
+    .ok-box, .error-box, .viewer-message, .correction-message {
       margin-top: 18px;
       border-radius: 14px;
       padding: 14px 16px;
@@ -308,35 +205,18 @@
     }
     .ok-box { background: var(--green-soft); color: var(--green); }
     .error-box { background: var(--red-soft); color: var(--red); }
-    .viewer-message.success { display: block; background: var(--green-soft); color: var(--green); }
-    .viewer-message.error { display: block; background: var(--red-soft); color: var(--red); }
-    .viewer-message.loading { display: block; background: var(--blue-soft); color: var(--navy); }
+    .viewer-message.success, .correction-message.success { display: block; background: var(--green-soft); color: var(--green); }
+    .viewer-message.error, .correction-message.error { display: block; background: var(--red-soft); color: var(--red); }
+    .viewer-message.loading, .correction-message.loading { display: block; background: var(--blue-soft); color: var(--navy); }
 
-    .viewer-toolbar {
+    .viewer-toolbar, .correction-toolbar, .collection-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 16px;
       flex-wrap: wrap;
     }
-    .viewer-toolbar h3 { margin: 0 0 5px; }
-    .viewer-toolbar p { margin: 0; color: var(--muted); }
-    .viewer-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-
-    .firebase-summary {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 20px;
-    }
-    .summary-card {
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 17px;
-      background: #fbfdff;
-    }
-    .summary-card span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 7px; }
-    .summary-card strong { font-size: 24px; }
+    .viewer-actions, .correction-actions, .collection-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
     .collection-grid {
       display: grid;
@@ -355,20 +235,12 @@
     .collection-card.active { border-color: var(--navy-2); background: var(--blue-soft); }
     .collection-card strong { display: block; margin-bottom: 7px; word-break: break-word; }
     .collection-card span { color: var(--muted); font-size: 12px; }
-
-    .collection-panel { display: none; margin-top: 20px; }
+    .collection-panel { display: none; }
     .collection-panel.visible { display: block; }
-    .collection-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 14px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
+    .collection-header { margin-bottom: 16px; }
     .collection-header h3 { margin: 0 0 4px; }
     .collection-header p { margin: 0; color: var(--muted); }
-    .collection-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
     .search-input {
       min-width: 260px;
       border: 1px solid var(--line);
@@ -381,30 +253,46 @@
     }
     .search-input:focus { border-color: var(--navy-2); box-shadow: 0 0 0 3px rgba(18,77,124,.09); }
     .check-label { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 13px; }
-    .firebase-table-wrap {
-      max-height: 520px;
-      overflow: auto;
+    .sensitive-value { letter-spacing: 2px; color: var(--muted); }
+
+    .correction-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 18px 0;
+    }
+    .correction-option {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: start;
+      gap: 12px;
+      padding: 16px;
       border: 1px solid var(--line);
       border-radius: 16px;
+      background: #fbfdff;
     }
-    .firebase-table-wrap table { min-width: 100%; width: max-content; }
-    .sensitive-value { letter-spacing: 2px; color: var(--muted); }
+    .correction-option input { margin-top: 4px; }
+    .correction-option strong { display: block; margin-bottom: 5px; }
+    .correction-option p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .correction-option small { display: block; margin-top: 6px; color: var(--amber); }
+    .correction-count { min-width: 64px; text-align: right; color: var(--navy); font-weight: 750; }
+    .correction-results { display: none; }
+    .correction-results.visible { display: block; }
 
     @media (max-width: 1050px) {
       .collection-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .firebase-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metrics, .firebase-summary, .correction-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
     @media (max-width: 900px) {
       header { padding: 16px 20px; }
       main { width: min(100% - 26px, 1320px); }
-      .upload-panel,
-      .result-grid { grid-template-columns: 1fr; }
+      .upload-panel, .result-grid { grid-template-columns: 1fr; }
       .actions { flex-direction: row; min-width: 0; }
       .actions button { flex: 1; }
-      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .collection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .firebase-summary { grid-template-columns: 1fr; }
+      .collection-grid, .correction-options { grid-template-columns: 1fr; }
+      .mode-tabs { width: 100%; }
+      .mode-tab { flex: 1; }
     }
   </style>
 </head>
@@ -414,7 +302,7 @@
       <div class="brand-mark">⇄</div>
       <div>
         <h1>Migrador de Títulos</h1>
-        <p>Migrar Excel y consultar Firestore</p>
+        <p>Migrar, consultar y corregir Firestore</p>
       </div>
     </div>
     <div class="target">Destino fijo<strong>Firestore · titulos-ec2fa</strong></div>
@@ -424,6 +312,7 @@
     <div class="mode-tabs">
       <button class="mode-tab active" id="migrationTab">Migrar Excel</button>
       <button class="mode-tab" id="viewerTab">Consultar Firebase</button>
+      <button class="mode-tab" id="correctionsTab">Correcciones</button>
     </div>
 
     <section class="view active" id="migrationView">
@@ -438,8 +327,7 @@
       <section class="panel upload-panel">
         <div>
           <h3>Archivo Excel</h3>
-          <p>La app identifica el archivo y muestra las colecciones que se crearán o actualizarán.</p>
-
+          <p>La app identifica el archivo, carga los datos y ejecuta una normalización final para evitar campos redundantes.</p>
           <div class="file-box">
             <div class="file-icon">📄</div>
             <div class="file-data">
@@ -447,16 +335,11 @@
               <span id="fileDetail">Puedes elegir Claves.xlsx o RESPALDO TITULOS APP.xlsx.</span>
             </div>
           </div>
-
           <div class="progress-wrap">
-            <div class="progress-meta">
-              <span id="progressMessage">Esperando archivo</span>
-              <span id="progressPercent">0%</span>
-            </div>
+            <div class="progress-meta"><span id="progressMessage">Esperando archivo</span><span id="progressPercent">0%</span></div>
             <div class="progress"><div id="progressBar"></div></div>
           </div>
         </div>
-
         <div class="actions">
           <button class="secondary" id="selectButton">1. Seleccionar Excel</button>
           <button class="primary" id="analyzeButton" disabled>2. Analizar</button>
@@ -470,22 +353,16 @@
       <section class="panel" id="results">
         <h3 id="resultTitle" style="margin-top:0">Resultado del análisis</h3>
         <div class="metrics" id="metrics"></div>
-
         <strong>Colecciones que se crearán o actualizarán</strong>
         <div class="collections" id="collections"></div>
         <div id="modeNote"></div>
-
         <div class="result-grid">
           <div class="subpanel">
             <h4 id="previewTitle">Vista previa</h4>
             <div class="table-wrap">
-              <table>
-                <thead><tr id="previewHead"></tr></thead>
-                <tbody id="previewBody"></tbody>
-              </table>
+              <table><thead><tr id="previewHead"></tr></thead><tbody id="previewBody"></tbody></table>
             </div>
           </div>
-
           <div class="subpanel">
             <h4>Advertencias</h4>
             <div class="warnings" id="warnings"></div>
@@ -505,16 +382,12 @@
 
       <section class="panel">
         <div class="viewer-toolbar">
-          <div>
-            <h3>Contenido de Firestore</h3>
-            <p>Proyecto: titulos-ec2fa</p>
-          </div>
+          <div><h3>Contenido de Firestore</h3><p>Proyecto: titulos-ec2fa</p></div>
           <div class="viewer-actions">
             <button class="secondary" id="refreshFirebaseButton">Actualizar datos</button>
             <button class="success" id="exportAllButton">Exportar todo a Excel</button>
           </div>
         </div>
-
         <div class="viewer-message" id="viewerMessage"></div>
         <div class="firebase-summary" id="firebaseSummary"></div>
         <div class="collection-grid" id="collectionCards"></div>
@@ -522,31 +395,70 @@
 
       <section class="panel collection-panel" id="collectionPanel">
         <div class="collection-header">
-          <div>
-            <h3 id="collectionTitle">Colección</h3>
-            <p id="collectionMeta">0 documentos</p>
-          </div>
+          <div><h3 id="collectionTitle">Colección</h3><p id="collectionMeta">0 documentos</p></div>
           <div class="collection-controls">
             <input class="search-input" id="collectionSearch" type="search" placeholder="Buscar dentro de la colección" />
-            <label class="check-label">
-              <input id="showSensitive" type="checkbox" />
-              Mostrar claves completas
-            </label>
+            <label class="check-label"><input id="showSensitive" type="checkbox" /> Mostrar claves completas</label>
             <button class="secondary" id="exportCollectionButton">Exportar colección</button>
           </div>
         </div>
-
         <div class="firebase-table-wrap">
-          <table>
-            <thead><tr id="firebaseHead"></tr></thead>
-            <tbody id="firebaseBody"></tbody>
-          </table>
+          <table><thead><tr id="firebaseHead"></tr></thead><tbody id="firebaseBody"></tbody></table>
+        </div>
+      </section>
+    </section>
+
+    <section class="view" id="correctionsView">
+      <div class="intro">
+        <div>
+          <h2>Correcciones de Firebase</h2>
+          <p>Analiza la base, muestra los cambios antes de aplicarlos y crea un respaldo local automático.</p>
+        </div>
+        <div class="step-pill">Análisis controlado</div>
+      </div>
+
+      <section class="panel">
+        <div class="correction-toolbar">
+          <div>
+            <h3>Diagnóstico y limpieza</h3>
+            <p>No elimina documentos. Solo corrige valores y elimina campos seleccionados mediante deleteField().</p>
+          </div>
+          <div class="correction-actions">
+            <button class="secondary" id="analyzeCorrectionsButton">Analizar Firebase</button>
+            <button class="success" id="applyCorrectionsButton" disabled>Aplicar seleccionadas</button>
+          </div>
+        </div>
+
+        <div class="progress-wrap">
+          <div class="progress-meta"><span id="correctionProgressMessage">Esperando análisis</span><span id="correctionProgressPercent">0%</span></div>
+          <div class="progress"><div id="correctionProgressBar"></div></div>
+        </div>
+        <div class="correction-message" id="correctionMessage"></div>
+
+        <div class="correction-results" id="correctionResults">
+          <div class="correction-summary" id="correctionSummary"></div>
+          <h3>Tipos de corrección</h3>
+          <div class="correction-options" id="correctionOptions"></div>
+          <h3>Vista previa de cambios</h3>
+          <div class="correction-table-wrap">
+            <table>
+              <thead><tr><th>Colección</th><th>Documento</th><th>Campo</th><th>Antes</th><th>Después</th><th>Motivo</th></tr></thead>
+              <tbody id="correctionPreviewBody"></tbody>
+            </table>
+          </div>
         </div>
       </section>
     </section>
   </main>
 
   <script>
+    const RECOMMENDED_CORRECTIONS = [
+      'limpiar_titulos',
+      'eliminar_redundantes',
+      'eliminar_tecnicos',
+      'reparar_actuales'
+    ];
+
     const state = {
       selected: false,
       analyzed: false,
@@ -556,10 +468,21 @@
       firebaseLoaded: false,
       activeCollection: null,
       collectionData: null,
-      showSensitive: false
+      showSensitive: false,
+      correctionAnalysis: null,
+      correctionBusy: false
     };
 
     const $ = (id) => document.getElementById(id);
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
 
     function showError(message) {
       $('okBox').style.display = 'none';
@@ -585,9 +508,14 @@
     }
 
     function clearViewerMessage() {
-      const box = $('viewerMessage');
-      box.className = 'viewer-message';
-      box.textContent = '';
+      $('viewerMessage').className = 'viewer-message';
+      $('viewerMessage').textContent = '';
+    }
+
+    function setCorrectionMessage(message, tone = 'loading') {
+      const box = $('correctionMessage');
+      box.className = `correction-message ${tone}`;
+      box.textContent = message;
     }
 
     function setBusy(value) {
@@ -597,95 +525,67 @@
       $('uploadButton').disabled = value || !state.analyzed;
     }
 
+    function setCorrectionBusy(value) {
+      state.correctionBusy = value;
+      $('analyzeCorrectionsButton').disabled = value;
+      $('applyCorrectionsButton').disabled = value || !state.correctionAnalysis || selectedCorrectionIds().length === 0;
+    }
+
     function setProgress(percent, message, tone = 'normal') {
       const safe = Math.max(0, Math.min(100, Number(percent) || 0));
       $('progressBar').style.width = `${safe}%`;
       $('progressPercent').textContent = `${safe}%`;
       $('progressMessage').textContent = message;
-      $('progressBar').style.background = tone === 'success'
-        ? '#17865b'
-        : tone === 'warning'
-          ? '#a15c00'
-          : tone === 'error'
-            ? '#b3261e'
-            : '#124d7c';
+      $('progressBar').style.background = tone === 'success' ? '#17865b' : tone === 'error' ? '#b3261e' : '#124d7c';
     }
 
-    function escapeHtml(value) {
-      return String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
+    function setCorrectionProgress(percent, message, tone = 'normal') {
+      const safe = Math.max(0, Math.min(100, Number(percent) || 0));
+      $('correctionProgressBar').style.width = `${safe}%`;
+      $('correctionProgressPercent').textContent = `${safe}%`;
+      $('correctionProgressMessage').textContent = message;
+      $('correctionProgressBar').style.background = tone === 'success' ? '#17865b' : tone === 'error' ? '#b3261e' : '#124d7c';
     }
 
     function switchView(viewName) {
-      const migrationActive = viewName === 'migration';
-      $('migrationView').classList.toggle('active', migrationActive);
-      $('viewerView').classList.toggle('active', !migrationActive);
-      $('migrationTab').classList.toggle('active', migrationActive);
-      $('viewerTab').classList.toggle('active', !migrationActive);
-
-      if (!migrationActive && !state.firebaseLoaded) refreshFirebaseSummary();
+      const views = {
+        migration: ['migrationView', 'migrationTab'],
+        viewer: ['viewerView', 'viewerTab'],
+        corrections: ['correctionsView', 'correctionsTab']
+      };
+      for (const [name, [viewId, tabId]] of Object.entries(views)) {
+        $(viewId).classList.toggle('active', name === viewName);
+        $(tabId).classList.toggle('active', name === viewName);
+      }
+      if (viewName === 'viewer' && !state.firebaseLoaded) refreshFirebaseSummary();
     }
 
     function renderAnalysis(data) {
       $('results').style.display = 'block';
       $('resultTitle').textContent = `Resultado: ${data.typeLabel}`;
-
       $('metrics').innerHTML = data.metrics.map((item) => `
-        <div class="metric">
-          <span>${escapeHtml(item.label)}</span>
-          <strong>${escapeHtml(item.value)}</strong>
-        </div>
+        <div class="metric"><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong></div>
       `).join('');
-
-      $('collections').innerHTML = data.collections
-        .map((item) => `
-          <span class="collection-chip">
-            ${escapeHtml(item.name)}: ${escapeHtml(item.count)}
-          </span>
-        `)
-        .join('');
+      $('collections').innerHTML = data.collections.map((item) => `
+        <span class="collection-chip">${escapeHtml(item.name)}: ${escapeHtml(item.count)}</span>
+      `).join('');
 
       if (data.type === 'titulos') {
         $('modeNote').innerHTML = `
-          <div class="structure-note">
-            <strong>Estructura final:</strong>
-            cada grupo queda como <code>colección → documento → campos</code>.
-            Las versiones están en <code>versiones_envio</code> y las correcciones en
-            <code>resoluciones</code>, sin subcolecciones dentro de los envíos.
-          </div>
+          <div class="structure-note"><strong>Estructura final:</strong> colección → documento → campos. Las versiones permanecen en <code>versiones_envio</code> y las correcciones en <code>resoluciones</code>.</div>
         `;
         $('previewTitle').textContent = 'Vista previa de envíos';
       } else {
         $('modeNote').innerHTML = `
-          <div class="sensitive-note">
-            <strong>Claves incluidas:</strong>
-            se subirán los campos <code>credencial</code>, <code>secreto</code> y los
-            valores de configuración exactamente como aparecen en el Excel.
-          </div>
+          <div class="sensitive-note"><strong>Claves incluidas:</strong> se subirán credenciales, secretos y valores de configuración del Excel.</div>
         `;
         $('previewTitle').textContent = 'Vista previa de proveedores de IA';
       }
 
-      $('previewHead').innerHTML = data.previewHeaders
-        .map((header) => `<th>${escapeHtml(header)}</th>`)
-        .join('');
-
+      $('previewHead').innerHTML = data.previewHeaders.map((header) => `<th>${escapeHtml(header)}</th>`).join('');
       $('previewBody').innerHTML = data.previewRows.map((row) => `
-        <tr>
-          ${row.map((value, index) => `
-            <td>
-              ${index === row.length - 1
-                ? `<span class="badge">${escapeHtml(value)}</span>`
-                : escapeHtml(value)}
-            </td>
-          `).join('')}
-        </tr>
+        <tr>${row.map((value, index) => `<td>${index === row.length - 1 ? `<span class="badge">${escapeHtml(value)}</span>` : escapeHtml(value)}</td>`).join('')}</tr>
       `).join('');
-
       $('warnings').innerHTML = data.warnings.length
         ? data.warnings.map((warning) => `<div class="warning">${escapeHtml(warning)}</div>`).join('')
         : '<div style="color:#17865b;padding:8px 0">No se encontraron advertencias importantes.</div>';
@@ -697,14 +597,11 @@
         <div class="summary-card"><span>Colecciones</span><strong>${data.collections.length}</strong></div>
         <div class="summary-card"><span>Documentos totales</span><strong>${data.totalDocuments}</strong></div>
       `;
-
       $('collectionCards').innerHTML = data.collections.map((item) => `
         <button class="collection-card ${state.activeCollection === item.name ? 'active' : ''}" data-collection="${escapeHtml(item.name)}">
-          <strong>${escapeHtml(item.name)}</strong>
-          <span>${item.count} documentos · ${item.fields} campos</span>
+          <strong>${escapeHtml(item.name)}</strong><span>${item.count} documentos · ${item.fields} campos</span>
         </button>
       `).join('');
-
       document.querySelectorAll('.collection-card').forEach((button) => {
         button.addEventListener('click', () => loadCollection(button.dataset.collection));
       });
@@ -728,18 +625,15 @@
     function isSensitiveField(field, row) {
       const normalized = String(field).toLowerCase();
       if (/(credencial|secreto|password|token|api.?key)/i.test(normalized)) return true;
-      if (normalized === 'valor' && /(acceso|clave|token|secret|proxy)/i.test(String(row.clave || row.id || ''))) return true;
-      return false;
+      return normalized === 'valor' && /(acceso|clave|token|secret|proxy)/i.test(String(row.clave || row.id || ''));
     }
 
     function displayValue(field, value, row) {
       if (!state.showSensitive && isSensitiveField(field, row) && value != null && value !== '') {
         return '<span class="sensitive-value">••••••••••••</span>';
       }
-
       if (value == null) return '<span style="color:#9aa7b4">—</span>';
-      const text = typeof value === 'object' ? JSON.stringify(value) : String(value);
-      return escapeHtml(text);
+      return escapeHtml(typeof value === 'object' ? JSON.stringify(value) : String(value));
     }
 
     function filteredDocuments() {
@@ -753,14 +647,11 @@
       if (!state.collectionData) return;
       const documents = filteredDocuments();
       const fields = state.collectionData.fields;
-
       $('collectionTitle').textContent = state.collectionData.collection;
       $('collectionMeta').textContent = `${documents.length} de ${state.collectionData.total} documentos visibles`;
       $('firebaseHead').innerHTML = fields.map((field) => `<th>${escapeHtml(field)}</th>`).join('');
       $('firebaseBody').innerHTML = documents.length
-        ? documents.map((row) => `
-            <tr>${fields.map((field) => `<td title="${escapeHtml(typeof row[field] === 'object' ? JSON.stringify(row[field]) : row[field])}">${displayValue(field, row[field], row)}</td>`).join('')}</tr>
-          `).join('')
+        ? documents.map((row) => `<tr>${fields.map((field) => `<td title="${escapeHtml(typeof row[field] === 'object' ? JSON.stringify(row[field]) : row[field])}">${displayValue(field, row[field], row)}</td>`).join('')}</tr>`).join('')
         : `<tr><td colspan="${fields.length}">No hay documentos que coincidan con la búsqueda.</td></tr>`;
     }
 
@@ -786,46 +677,138 @@
       try {
         setViewerMessage('Preparando archivo Excel…', 'loading');
         const result = await window.migrador.exportarFirebase(collectionNames);
-        if (!result) {
-          clearViewerMessage();
-          return;
-        }
+        if (!result) return clearViewerMessage();
         setViewerMessage(`Exportación completada: ${result.filePath}`, 'success');
       } catch (error) {
         setViewerMessage(error.message || String(error), 'error');
       }
     }
 
-    window.migrador.onProgreso(({ percent, message, tone }) => {
-      setProgress(percent, message, tone);
-    });
+    function selectedCorrectionIds() {
+      return [...document.querySelectorAll('.correction-checkbox:checked')].map((item) => item.value);
+    }
+
+    function previewValue(value, action) {
+      if (action === 'delete') return '<span style="color:#b3261e">Eliminar campo</span>';
+      if (value == null || value === '') return '<span style="color:#9aa7b4">—</span>';
+      return escapeHtml(typeof value === 'object' ? JSON.stringify(value) : String(value));
+    }
+
+    function renderCorrectionAnalysis(data) {
+      state.correctionAnalysis = data;
+      $('correctionResults').classList.add('visible');
+      $('correctionSummary').innerHTML = `
+        <div class="summary-card"><span>Documentos analizados</span><strong>${data.totalDocuments}</strong></div>
+        <div class="summary-card"><span>Documentos afectados</span><strong>${data.affectedDocuments}</strong></div>
+        <div class="summary-card"><span>Cambios encontrados</span><strong>${data.totalChanges}</strong></div>
+        <div class="summary-card"><span>Proyecto</span><strong>${escapeHtml(data.projectId)}</strong></div>
+      `;
+
+      $('correctionOptions').innerHTML = data.categories.map((category) => `
+        <label class="correction-option">
+          <input class="correction-checkbox" type="checkbox" value="${escapeHtml(category.id)}" ${category.recommended && category.changes > 0 ? 'checked' : ''} ${category.changes === 0 ? 'disabled' : ''} />
+          <span>
+            <strong>${escapeHtml(category.label)}</strong>
+            <p>${escapeHtml(category.description)}</p>
+            ${category.warning ? `<small>${escapeHtml(category.warning)}</small>` : ''}
+          </span>
+          <span class="correction-count">${category.changes}<br><small>${category.documents} docs</small></span>
+        </label>
+      `).join('');
+
+      $('correctionPreviewBody').innerHTML = data.preview.length
+        ? data.preview.map((change) => `
+            <tr>
+              <td>${escapeHtml(change.collection)}</td>
+              <td>${escapeHtml(change.id)}</td>
+              <td>${escapeHtml(change.field)}</td>
+              <td class="wrap-cell">${previewValue(change.before, 'set')}</td>
+              <td class="wrap-cell">${previewValue(change.after, change.action)}</td>
+              <td class="wrap-cell">${escapeHtml(change.reason)}</td>
+            </tr>
+          `).join('')
+        : '<tr><td colspan="6">La base no tiene correcciones pendientes.</td></tr>';
+
+      document.querySelectorAll('.correction-checkbox').forEach((checkbox) => {
+        checkbox.addEventListener('change', () => setCorrectionBusy(false));
+      });
+      setCorrectionBusy(false);
+    }
+
+    async function analyzeCorrections() {
+      try {
+        setCorrectionBusy(true);
+        setCorrectionMessage('Analizando campos y referencias…', 'loading');
+        const data = await window.migrador.analizarCorrecciones();
+        renderCorrectionAnalysis(data);
+        setCorrectionMessage(
+          data.totalChanges
+            ? `Se encontraron ${data.totalChanges} cambios posibles en ${data.affectedDocuments} documentos.`
+            : 'La base ya está limpia y no tiene correcciones pendientes.',
+          'success'
+        );
+      } catch (error) {
+        setCorrectionMessage(error.message || String(error), 'error');
+      } finally {
+        setCorrectionBusy(false);
+      }
+    }
+
+    async function applySelectedCorrections() {
+      const categoryIds = selectedCorrectionIds();
+      if (!categoryIds.length) return;
+      const selectedLabels = state.correctionAnalysis.categories
+        .filter((item) => categoryIds.includes(item.id))
+        .map((item) => item.label)
+        .join(', ');
+      if (!confirm(`Se aplicarán estas correcciones: ${selectedLabels}. Antes se creará un respaldo local. ¿Continuar?`)) return;
+
+      try {
+        setCorrectionBusy(true);
+        setCorrectionMessage('Aplicando correcciones seleccionadas…', 'loading');
+        const result = await window.migrador.aplicarCorrecciones(categoryIds);
+        state.firebaseLoaded = false;
+        setCorrectionMessage(
+          result.changesApplied
+            ? `Corrección ${result.operationId} completada: ${result.changesApplied} cambios en ${result.documentsUpdated} documentos. Respaldo: ${result.backupPath}`
+            : 'No había cambios pendientes para las opciones seleccionadas.',
+          'success'
+        );
+        await analyzeCorrections();
+      } catch (error) {
+        setCorrectionMessage(error.message || String(error), 'error');
+      } finally {
+        setCorrectionBusy(false);
+      }
+    }
+
+    window.migrador.onProgreso(({ percent, message, tone }) => setProgress(percent, message, tone));
+    window.migrador.onProgresoCorrecciones(({ percent, message, tone }) => setCorrectionProgress(percent, message, tone));
 
     $('migrationTab').addEventListener('click', () => switchView('migration'));
     $('viewerTab').addEventListener('click', () => switchView('viewer'));
+    $('correctionsTab').addEventListener('click', () => switchView('corrections'));
     $('refreshFirebaseButton').addEventListener('click', refreshFirebaseSummary);
     $('exportAllButton').addEventListener('click', () => exportFirebase([]));
-    $('exportCollectionButton').addEventListener('click', () => {
-      if (state.activeCollection) exportFirebase([state.activeCollection]);
-    });
+    $('exportCollectionButton').addEventListener('click', () => state.activeCollection && exportFirebase([state.activeCollection]));
     $('collectionSearch').addEventListener('input', renderCollectionTable);
     $('showSensitive').addEventListener('change', (event) => {
       state.showSensitive = event.target.checked;
       renderCollectionTable();
     });
+    $('analyzeCorrectionsButton').addEventListener('click', analyzeCorrections);
+    $('applyCorrectionsButton').addEventListener('click', applySelectedCorrections);
 
     $('selectButton').addEventListener('click', async () => {
       clearMessages();
-
       try {
         setBusy(true);
         const result = await window.migrador.seleccionarExcel();
         if (!result) return;
-
         state.selected = true;
         state.analyzed = false;
         state.type = result.type;
         state.typeLabel = result.typeLabel;
-
         $('fileName').textContent = result.sourceName;
         $('fileDetail').textContent = `${result.typeLabel} reconocido correctamente.`;
         $('results').style.display = 'none';
@@ -840,16 +823,13 @@
 
     $('analyzeButton').addEventListener('click', async () => {
       clearMessages();
-
       try {
         setBusy(true);
         setProgress(3, 'Iniciando análisis…');
-
         const data = await window.migrador.analizar();
         state.analyzed = true;
         state.type = data.type;
         state.typeLabel = data.typeLabel;
-
         renderAnalysis(data);
         $('stepPill').textContent = 'Paso 3 de 3';
         showOk(`${data.typeLabel} analizado y listo para subir.`);
@@ -864,28 +844,26 @@
 
     $('uploadButton').addEventListener('click', async () => {
       clearMessages();
-
       const detail = state.type === 'claves'
         ? 'Se subirán también las credenciales y secretos del Excel.'
-        : 'La app creará un respaldo, eliminará la estructura antigua de envíos y generará colecciones principales sin subcolecciones.';
-
-      const accepted = confirm(`Se modificará Firestore en titulos-ec2fa. ${detail} ¿Continuar?`);
-      if (!accepted) return;
+        : 'La app reconstruirá las colecciones principales sin subcolecciones.';
+      if (!confirm(`Se modificará Firestore en titulos-ec2fa. ${detail} ¿Continuar?`)) return;
 
       try {
         setBusy(true);
         const result = await window.migrador.migrar();
-
-        const cleanupText = state.type === 'titulos'
-          ? ` Se eliminaron ${result.cleanup.deletedNested} documentos de subcolecciones antiguas y ${result.cleanup.deletedParentsAndTopLevel} documentos de la estructura anterior.`
-          : '';
-
-        showOk(
-          `Migración ${result.migrationId} completada. ` +
-          `Se realizaron ${result.totalWrites} escrituras.${cleanupText} ` +
-          `Respaldo local: ${result.backupPath}`
-        );
+        let normalizationText = '';
+        try {
+          const correction = await window.migrador.aplicarCorrecciones(RECOMMENDED_CORRECTIONS);
+          normalizationText = correction.changesApplied
+            ? ` Normalización final: ${correction.changesApplied} ajustes aplicados.`
+            : ' La base ya estaba normalizada.';
+        } catch (correctionError) {
+          normalizationText = ` La migración terminó, pero la normalización final mostró: ${correctionError.message || correctionError}`;
+        }
         state.firebaseLoaded = false;
+        state.correctionAnalysis = null;
+        showOk(`Migración ${result.migrationId} completada. Se realizaron ${result.totalWrites} escrituras.${normalizationText} Respaldo: ${result.backupPath}`);
       } catch (error) {
         setProgress(0, 'La migración no pudo completarse', 'error');
         showError(error.message || String(error));
