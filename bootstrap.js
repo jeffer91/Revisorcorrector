@@ -3,37 +3,39 @@
 const fs = require('fs');
 const path = require('path');
 const Module = require('module');
+const { app, BrowserWindow, Menu } = require('electron');
 
 const mainPath = path.join(__dirname, 'main.js');
 let source = fs.readFileSync(mainPath, 'utf8');
 
-function replaceRequired(searchValue, replacement, description) {
-  if (!source.includes(searchValue)) {
-    throw new Error(`No se pudo aplicar la corrección: ${description}. Actualiza el repositorio e inténtalo otra vez.`);
+function fixCareerIdentifiers(code) {
+  let result = code;
+
+  result = result.replace(
+    /(^[\t ]*)carreraId,(\r?\n)([\t ]*carreraCodigo:)/gm,
+    '$1carreraId: careerId,$2$3'
+  );
+
+  result = result.replace(
+    /(^[\t ]*)carreraId,(\r?\n)([\t ]*carreraNombre:)/gm,
+    '$1carreraId: careerId,$2$3'
+  );
+
+  const correctedOccurrences = (result.match(/carreraId:\s*careerId/g) || []).length;
+  if (correctedOccurrences < 2) {
+    console.warn('[Migrador] No se encontraron las dos asignaciones esperadas de carreraId. Se continuará porque el archivo puede estar corregido en otra versión.');
   }
-  source = source.replace(searchValue, replacement);
+
+  return result;
 }
 
-replaceRequired(
-  "const { app, BrowserWindow, dialog, ipcMain } = require('electron');",
-  "const { app, BrowserWindow, dialog, ipcMain, Menu } = require('electron');",
-  'importación del menú de Electron'
-);
+function buildMenu() {
+  const openConsole = () => {
+    const window = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+    if (window && !window.isDestroyed()) window.webContents.toggleDevTools();
+  };
 
-replaceRequired(
-  "      carreraId,\n      carreraCodigo: careerCode,",
-  "      carreraId: careerId,\n      carreraCodigo: careerCode,",
-  'identificador de carrera del índice de estudiantes'
-);
-
-replaceRequired(
-  "      carreraId,\n      carreraNombre: careerName || indexSnapshot.carreraNombre,",
-  "      carreraId: careerId,\n      carreraNombre: careerName || indexSnapshot.carreraNombre,",
-  'identificador de carrera de los envíos'
-);
-
-const menuCode = `function createApplicationMenu() {
-  const template = [
+  return Menu.buildFromTemplate([
     {
       label: 'Archivo',
       submenu: [
@@ -49,9 +51,7 @@ const menuCode = `function createApplicationMenu() {
         {
           label: 'Abrir/cerrar consola',
           accelerator: 'F12',
-          click: () => {
-            if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.toggleDevTools();
-          }
+          click: openConsole
         },
         { type: 'separator' },
         { role: 'resetZoom', label: 'Tamaño real' },
@@ -65,36 +65,42 @@ const menuCode = `function createApplicationMenu() {
       submenu: [
         {
           label: 'Consola de diagnóstico',
-          click: () => {
-            if (mainWindow && !mainWindow.isDestroyed()) {
-              mainWindow.webContents.openDevTools({ mode: 'detach' });
-            }
-          }
+          click: openConsole
         }
       ]
     }
-  ];
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
-}`;
+  ]);
+}
 
-replaceRequired(
-  'function createWindow() {',
-  `${menuCode}\n\nfunction createWindow() {`,
-  'creación del menú superior'
-);
+function installMenu() {
+  Menu.setApplicationMenu(buildMenu());
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed()) window.setMenuBarVisibility(true);
+  }
+}
 
-replaceRequired(
-  "  mainWindow.setMenuBarVisibility(false);\n  mainWindow.loadFile('index.html');",
-  "  createApplicationMenu();\n  mainWindow.setMenuBarVisibility(true);\n  mainWindow.loadFile('index.html');",
-  'activación del menú superior'
-);
+app.on('browser-window-created', (_event, window) => {
+  setTimeout(() => {
+    if (!window.isDestroyed()) {
+      installMenu();
+      window.setMenuBarVisibility(true);
+    }
+  }, 0);
+});
+
+app.whenReady().then(installMenu).catch((error) => {
+  console.error('[Migrador] No se pudo instalar el menú:', error);
+});
 
 process.on('uncaughtException', (error) => {
   console.error('[Error no controlado]', error);
 });
+
 process.on('unhandledRejection', (error) => {
   console.error('[Promesa rechazada]', error);
 });
+
+source = fixCareerIdentifiers(source);
 
 const runtimeModule = new Module(mainPath, module);
 runtimeModule.filename = mainPath;
