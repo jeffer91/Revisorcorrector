@@ -1,9 +1,12 @@
 const { contextBridge, ipcRenderer } = require('electron');
-contextBridge.exposeInMainWorld('api', {
-  pick: (type) => ipcRenderer.invoke('pick', type),
-  analyze: (config) => ipcRenderer.invoke('analyze', config),
-  migrate: (options) => ipcRenderer.invoke('migrate', options),
-  exportReport: () => ipcRenderer.invoke('export-report'),
-  openPath: (filePath) => ipcRenderer.invoke('open-path', filePath),
-  onProgress: (callback) => ipcRenderer.on('progress', (_event, data) => callback(data))
+
+contextBridge.exposeInMainWorld('migrador', {
+  seleccionarExcel: () => ipcRenderer.invoke('excel:seleccionar'),
+  analizar: () => ipcRenderer.invoke('excel:analizar'),
+  migrar: () => ipcRenderer.invoke('firebase:migrar'),
+  onProgreso: (callback) => {
+    const listener = (_event, data) => callback(data);
+    ipcRenderer.on('migracion:progreso', listener);
+    return () => ipcRenderer.removeListener('migracion:progreso', listener);
+  }
 });
