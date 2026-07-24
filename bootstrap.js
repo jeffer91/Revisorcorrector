@@ -21,9 +21,60 @@ function fixCareerIdentifiers(code) {
     '$1carreraId: careerId,$2$3'
   );
 
-  const correctedOccurrences = (result.match(/carreraId:\s*careerId/g) || []).length;
-  if (correctedOccurrences < 2) {
-    console.warn('[Migrador] No se encontraron las dos asignaciones esperadas de carreraId. Se continuará porque el archivo puede estar corregido en otra versión.');
+  return result;
+}
+
+function enableCredentialPicker(code) {
+  let result = code;
+
+  result = result.replace(
+    /function loadServiceAccount\(sourcePath\)\s*\{/,
+    'function loadServiceAccount(sourcePath, explicitPath = null) {'
+  );
+
+  result = result.replace(
+    /const accountPath = findServiceAccount\(sourcePath\);/,
+    'const accountPath = explicitPath || findServiceAccount(sourcePath);'
+  );
+
+  result = result.replace(
+    /async function migrateToFirestore\(result\)\s*\{/,
+    'async function migrateToFirestore(result, explicitAccountPath = null) {'
+  );
+
+  result = result.replace(
+    /loadServiceAccount\(result\.sourcePath\)/,
+    'loadServiceAccount(result.sourcePath, explicitAccountPath)'
+  );
+
+  const handlerPattern = /ipcMain\.handle\('firebase:migrar', async \(\) => \{[\s\S]*?return migrateToFirestore\(analysisResult(?:,\s*[^)]*)?\);\s*\}\);/m;
+  const handlerReplacement = [
+    "ipcMain.handle('firebase:migrar', async () => {",
+    "  if (!analysisResult) throw new Error('Primero pulsa Analizar.');",
+    "",
+    "  let accountPath = findServiceAccount(analysisResult.sourcePath);",
+    "  if (!accountPath) {",
+    "    const credentialResult = await dialog.showOpenDialog(mainWindow, {",
+    "      title: 'Seleccionar clave privada de Firebase',",
+    "      properties: ['openFile'],",
+    "      filters: [{ name: 'Cuenta de servicio Firebase', extensions: ['json'] }]",
+    "    });",
+    "",
+    "    if (credentialResult.canceled || !credentialResult.filePaths[0]) {",
+    "      throw new Error('Debes seleccionar la clave privada JSON del proyecto titulos-ec2fa para poder subir.');",
+    "    }",
+    "",
+    "    accountPath = credentialResult.filePaths[0];",
+    "  }",
+    "",
+    "  return migrateToFirestore(analysisResult, accountPath);",
+    "});"
+  ].join('\n');
+
+  if (handlerPattern.test(result)) {
+    result = result.replace(handlerPattern, handlerReplacement);
+  } else {
+    console.warn('[Migrador] No se encontró el manejador firebase:migrar para activar el selector automático de credenciales.');
   }
 
   return result;
@@ -101,6 +152,7 @@ process.on('unhandledRejection', (error) => {
 });
 
 source = fixCareerIdentifiers(source);
+source = enableCredentialPicker(source);
 
 const runtimeModule = new Module(mainPath, module);
 runtimeModule.filename = mainPath;
