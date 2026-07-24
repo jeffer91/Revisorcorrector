@@ -1,7 +1,7 @@
 {
   "name": "migrador-titulos",
-  "version": "3.1.1",
-  "description": "Migración automática desde Excel hacia Firestore titulos-ec2fa.",
+  "version": "3.2.0",
+  "description": "Migración, consulta y exportación de Firestore titulos-ec2fa.",
   "main": "launcher.js",
   "private": true,
   "scripts": {
@@ -23,6 +23,7 @@
     "files": [
       "launcher.js",
       "main.js",
+      "firebase_reader.js",
       "preload.js",
       "index.html",
       "package.json"
