@@ -1,7 +1,7 @@
 {
   "name": "migrador-titulos",
-  "version": "1.0.0",
-  "description": "Migrador local de datos de titulación desde Excel hacia Firestore.",
+  "version": "2.0.0",
+  "description": "Migración automática desde Excel hacia Firestore titulos-ec2fa.",
   "main": "main.js",
   "private": true,
   "scripts": {
@@ -22,13 +22,8 @@
     "asar": true,
     "files": [
       "main.js",
-      "migration.js",
-      "normalize.js",
-      "firebase.js",
       "preload.js",
       "index.html",
-      "renderer.js",
-      "styles.css",
       "package.json"
     ],
     "directories": {
@@ -36,18 +31,8 @@
     },
     "win": {
       "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
-        }
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
       ]
     },
     "nsis": {
