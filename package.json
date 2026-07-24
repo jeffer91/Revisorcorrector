@@ -1,6 +1,6 @@
 {
   "name": "migrador-titulos",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Migración automática desde Excel hacia Firestore titulos-ec2fa.",
   "main": "bootstrap.js",
   "private": true,
@@ -34,15 +34,11 @@
       "target": [
         {
           "target": "nsis",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         },
         {
           "target": "portable",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         }
       ]
     },
