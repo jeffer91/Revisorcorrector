@@ -33,11 +33,12 @@
     }
 
     header {
-      height: 92px;
+      min-height: 92px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 38px;
+      gap: 20px;
+      padding: 18px 38px;
       color: white;
       background: linear-gradient(110deg, #082944, #154b78);
       box-shadow: 0 4px 18px rgba(8, 41, 68, 0.18);
@@ -61,7 +62,7 @@
     main { width: min(1220px, calc(100% - 48px)); margin: 30px auto 46px; }
     .intro { display: flex; justify-content: space-between; gap: 18px; align-items: end; margin-bottom: 18px; }
     .intro h2 { margin: 0 0 7px; font-size: 28px; }
-    .intro p { margin: 0; color: var(--muted); }
+    .intro p { margin: 0; color: var(--muted); line-height: 1.5; }
     .step-pill {
       border: 1px solid var(--line);
       border-radius: 999px;
@@ -90,7 +91,7 @@
     .upload-panel p { margin: 0; color: var(--muted); line-height: 1.5; }
     .file-box {
       margin-top: 18px;
-      min-height: 64px;
+      min-height: 68px;
       display: flex;
       align-items: center;
       gap: 14px;
@@ -118,7 +119,7 @@
     .primary { color: white; background: var(--navy); box-shadow: 0 8px 18px rgba(11,52,88,.18); }
     .secondary { color: var(--navy); background: var(--blue-soft); }
     .success { color: white; background: var(--green); box-shadow: 0 8px 18px rgba(23,134,91,.18); }
-    .actions { display: flex; flex-direction: column; gap: 10px; min-width: 190px; }
+    .actions { display: flex; flex-direction: column; gap: 10px; min-width: 200px; }
 
     .progress-wrap { margin-top: 18px; }
     .progress-meta { display: flex; justify-content: space-between; gap: 15px; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
@@ -138,6 +139,8 @@
 
     .collections { display: flex; flex-wrap: wrap; gap: 9px; margin: 13px 0 22px; }
     .collection-chip { background: var(--blue-soft); color: var(--navy); border-radius: 999px; padding: 8px 12px; font-size: 13px; font-weight: 650; }
+    .structure-note { margin: 0 0 18px; padding: 13px 15px; border-radius: 13px; background: var(--green-soft); color: var(--green); line-height: 1.5; }
+    .sensitive-note { margin: 0 0 18px; padding: 13px 15px; border-radius: 13px; background: var(--amber-soft); color: var(--amber); line-height: 1.5; }
 
     .result-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 18px; }
     .subpanel { border: 1px solid var(--line); border-radius: 17px; overflow: hidden; }
@@ -146,18 +149,16 @@
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th, td { text-align: left; padding: 11px 13px; border-bottom: 1px solid #edf1f5; vertical-align: top; }
     th { position: sticky; top: 0; background: #fff; color: var(--muted); z-index: 1; }
-    td { max-width: 260px; }
+    td { max-width: 300px; }
     .badge { display: inline-block; border-radius: 999px; padding: 5px 8px; font-size: 11px; font-weight: 750; background: var(--blue-soft); color: var(--navy); }
     .warnings { padding: 14px 17px; max-height: 360px; overflow: auto; }
     .warning { margin-bottom: 9px; padding: 10px 12px; border-radius: 11px; background: var(--amber-soft); color: var(--amber); font-size: 12px; line-height: 1.4; }
     .ok-box, .error-box { margin-top: 18px; border-radius: 14px; padding: 14px 16px; display: none; line-height: 1.5; }
     .ok-box { background: var(--green-soft); color: var(--green); }
     .error-box { background: var(--red-soft); color: var(--red); }
-    .credential-note { margin-top: 15px; color: var(--muted); font-size: 12px; line-height: 1.5; }
-    code { background: #eef3f7; padding: 2px 6px; border-radius: 6px; }
 
     @media (max-width: 900px) {
-      header { padding: 0 20px; }
+      header { padding: 16px 20px; }
       main { width: min(100% - 26px, 1220px); }
       .upload-panel, .result-grid { grid-template-columns: 1fr; }
       .actions { flex-direction: row; min-width: 0; }
@@ -182,7 +183,7 @@
     <div class="intro">
       <div>
         <h2>Migración automática</h2>
-        <p>Selecciona cualquiera de los dos Excel. La app encontrará el respaldo correcto y organizará los datos por colecciones.</p>
+        <p>Selecciona directamente el respaldo de títulos o el Excel de claves de IA. Cada archivo se procesa por separado.</p>
       </div>
       <div class="step-pill" id="stepPill">Paso 1 de 3</div>
     </div>
@@ -190,7 +191,7 @@
     <section class="panel upload-panel">
       <div>
         <h3>Archivo Excel</h3>
-        <p>No debes configurar rutas, campos, roles ni la Firebase de estudiantes.</p>
+        <p>La app identifica el tipo de archivo y muestra exactamente qué colecciones va a crear o actualizar.</p>
         <div class="file-box">
           <div class="file-icon">📄</div>
           <div class="file-data">
@@ -214,23 +215,19 @@
     <div class="ok-box" id="okBox"></div>
 
     <section class="panel" id="results">
-      <h3 style="margin-top:0">Resultado del análisis</h3>
-      <div class="metrics">
-        <div class="metric"><span>Filas de envíos</span><strong id="mOriginal">0</strong></div>
-        <div class="metric"><span>Envíos organizados</span><strong id="mEnvios">0</strong></div>
-        <div class="metric"><span>Resoluciones únicas</span><strong id="mResoluciones">0</strong></div>
-        <div class="metric"><span>Duplicados descartados</span><strong id="mDuplicados">0</strong></div>
-      </div>
+      <h3 id="resultTitle" style="margin-top:0">Resultado del análisis</h3>
+      <div class="metrics" id="metrics"></div>
 
       <strong>Colecciones que se crearán o actualizarán</strong>
       <div class="collections" id="collections"></div>
+      <div id="modeNote"></div>
 
       <div class="result-grid">
         <div class="subpanel">
-          <h4>Vista previa de envíos</h4>
+          <h4 id="previewTitle">Vista previa</h4>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Cédula</th><th>Estudiante</th><th>Periodo</th><th>Estado</th></tr></thead>
+              <thead><tr id="previewHead"></tr></thead>
               <tbody id="previewBody"></tbody>
             </table>
           </div>
@@ -240,13 +237,11 @@
           <div class="warnings" id="warnings"></div>
         </div>
       </div>
-
-      <p class="credential-note" id="credentialNote"></p>
     </section>
   </main>
 
   <script>
-    const state = { selected: false, analyzed: false, busy: false };
+    const state = { selected: false, analyzed: false, busy: false, type: null, typeLabel: null };
     const $ = (id) => document.getElementById(id);
 
     function showError(message) {
@@ -278,29 +273,43 @@
       $('progressBar').style.width = `${safe}%`;
       $('progressPercent').textContent = `${safe}%`;
       $('progressMessage').textContent = message;
-      $('progressBar').style.background = tone === 'success' ? '#17865b' : tone === 'warning' ? '#a15c00' : tone === 'error' ? '#b3261e' : '#124d7c';
+      $('progressBar').style.background = tone === 'success'
+        ? '#17865b'
+        : tone === 'warning'
+          ? '#a15c00'
+          : tone === 'error'
+            ? '#b3261e'
+            : '#124d7c';
     }
 
     function renderAnalysis(data) {
       $('results').style.display = 'block';
-      $('mOriginal').textContent = data.summary.enviosOriginales;
-      $('mEnvios').textContent = data.summary.enviosConsolidados;
-      $('mResoluciones').textContent = data.summary.resolucionesUnicas;
-      $('mDuplicados').textContent = data.summary.filasDuplicadas;
-      $('collections').innerHTML = data.collections.map((item) => `<span class="collection-chip">${item.name}: ${item.count}</span>`).join('');
-      $('previewBody').innerHTML = data.preview.map((row) => `
-        <tr>
-          <td>${escapeHtml(row.cedula)}</td>
-          <td>${escapeHtml(row.estudiante)}</td>
-          <td>${escapeHtml(row.periodo)}</td>
-          <td><span class="badge">${escapeHtml(row.estado)}</span></td>
-        </tr>`).join('');
+      $('resultTitle').textContent = `Resultado: ${data.typeLabel}`;
+      $('metrics').innerHTML = data.metrics.map((item) => `
+        <div class="metric">
+          <span>${escapeHtml(item.label)}</span>
+          <strong>${escapeHtml(item.value)}</strong>
+        </div>`).join('');
+      $('collections').innerHTML = data.collections
+        .map((item) => `<span class="collection-chip">${escapeHtml(item.name)}: ${escapeHtml(item.count)}</span>`)
+        .join('');
+
+      if (data.type === 'titulos') {
+        $('modeNote').innerHTML = '<div class="structure-note"><strong>Estructura simple:</strong> cada estudiante queda en <code>envios → documento → campos</code>. Los tres títulos, el título elegido, el título corregido, el título final y los historiales quedan dentro del mismo documento. No se crearán subcolecciones.</div>';
+        $('previewTitle').textContent = 'Vista previa de envíos';
+      } else {
+        $('modeNote').innerHTML = '<div class="sensitive-note"><strong>Claves incluidas:</strong> se subirán los campos <code>credencial</code>, <code>secreto</code> y los valores de configuración exactamente como aparecen en el Excel.</div>';
+        $('previewTitle').textContent = 'Vista previa de proveedores de IA';
+      }
+
+      $('previewHead').innerHTML = data.previewHeaders
+        .map((header) => `<th>${escapeHtml(header)}</th>`)
+        .join('');
+      $('previewBody').innerHTML = data.previewRows.map((row) => `
+        <tr>${row.map((value, index) => `<td>${index === row.length - 1 ? `<span class="badge">${escapeHtml(value)}</span>` : escapeHtml(value)}</td>`).join('')}</tr>`).join('');
       $('warnings').innerHTML = data.warnings.length
         ? data.warnings.map((warning) => `<div class="warning">${escapeHtml(warning)}</div>`).join('')
         : '<div style="color:#17865b;padding:8px 0">No se encontraron advertencias importantes.</div>';
-      $('credentialNote').innerHTML = data.credentialDetected
-        ? '✓ La cuenta administrativa de <code>titulos-ec2fa</code> fue detectada. Ya puedes subir.'
-        : 'Para subir de forma segura, coloca una sola vez el archivo <code>firebase-admin.json</code> en la misma carpeta del Excel. No aparece como opción dentro de la app.';
     }
 
     function escapeHtml(value) {
@@ -322,10 +331,10 @@
         if (!result) return;
         state.selected = true;
         state.analyzed = false;
+        state.type = result.type;
+        state.typeLabel = result.typeLabel;
         $('fileName').textContent = result.sourceName;
-        $('fileDetail').textContent = result.autoDetected
-          ? `Seleccionaste ${result.selectedName}; se detectó automáticamente el respaldo ${result.sourceName}.`
-          : 'Respaldo reconocido correctamente.';
+        $('fileDetail').textContent = `${result.typeLabel} reconocido correctamente.`;
         $('results').style.display = 'none';
         $('stepPill').textContent = 'Paso 2 de 3';
         setProgress(0, 'Archivo listo para analizar');
@@ -343,9 +352,11 @@
         setProgress(3, 'Iniciando análisis…');
         const data = await window.migrador.analizar();
         state.analyzed = true;
+        state.type = data.type;
+        state.typeLabel = data.typeLabel;
         renderAnalysis(data);
         $('stepPill').textContent = 'Paso 3 de 3';
-        showOk(`Análisis terminado: ${data.summary.enviosConsolidados} envíos listos para organizar en Firestore.`);
+        showOk(`${data.typeLabel} analizado y listo para subir.`);
       } catch (error) {
         state.analyzed = false;
         setProgress(0, 'El análisis no pudo completarse', 'error');
@@ -357,13 +368,16 @@
 
     $('uploadButton').addEventListener('click', async () => {
       clearMessages();
-      const accepted = confirm('Se crearán o actualizarán las colecciones de Firestore en titulos-ec2fa. No se eliminarán documentos. ¿Continuar?');
+      const detail = state.type === 'claves'
+        ? 'Se subirán también las credenciales y secretos del Excel.'
+        : 'Los títulos y resoluciones quedarán como campos del documento, sin subcolecciones.';
+      const accepted = confirm(`Se crearán o actualizarán las colecciones de Firestore en titulos-ec2fa. ${detail} No se eliminarán documentos. ¿Continuar?`);
       if (!accepted) return;
+
       try {
         setBusy(true);
         const result = await window.migrador.migrar();
-        const errorText = result.errors.length ? ` Se registraron ${result.errors.length} errores.` : '';
-        showOk(`Migración ${result.migrationId} completada. Se programaron ${result.totalWrites} escrituras.${errorText} Respaldo local: ${result.backupPath}`);
+        showOk(`Migración ${result.migrationId} completada. Se realizaron ${result.totalWrites} escrituras. Respaldo local: ${result.backupPath}`);
       } catch (error) {
         setProgress(0, 'La migración no pudo completarse', 'error');
         showError(error.message || String(error));
