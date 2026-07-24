@@ -10,23 +10,18 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: read
-
     steps:
       - name: Descargar repositorio
         uses: actions/checkout@v4
-
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
       - name: Instalar dependencias
         run: npm install
-
-      - name: Crear instalador y versión portable
+      - name: Crear instalador y portable
         run: npm run dist
-
-      - name: Publicar archivos descargables
+      - name: Publicar ejecutables
         uses: actions/upload-artifact@v4
         with:
           name: MigradorTitulos-Windows
