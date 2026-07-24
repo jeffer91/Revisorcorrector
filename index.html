@@ -59,7 +59,31 @@
     .target { text-align: right; color: #d9e8f4; font-size: 13px; }
     .target strong { display: block; color: #fff; font-size: 15px; margin-top: 3px; }
 
-    main { width: min(1220px, calc(100% - 48px)); margin: 30px auto 46px; }
+    main { width: min(1320px, calc(100% - 48px)); margin: 24px auto 46px; }
+
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      padding: 6px;
+      width: fit-content;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: white;
+      box-shadow: 0 8px 24px rgba(23, 55, 88, 0.05);
+    }
+    .mode-tab {
+      padding: 11px 18px;
+      border-radius: 11px;
+      background: transparent;
+      color: var(--muted);
+      box-shadow: none;
+    }
+    .mode-tab.active { background: var(--navy); color: white; }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
     .intro {
       display: flex;
       justify-content: space-between;
@@ -233,13 +257,14 @@
       background: #f8fbfe;
       border-bottom: 1px solid var(--line);
     }
-    .table-wrap { max-height: 360px; overflow: auto; }
+    .table-wrap { max-height: 430px; overflow: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th, td {
       text-align: left;
       padding: 11px 13px;
       border-bottom: 1px solid #edf1f5;
       vertical-align: top;
+      white-space: nowrap;
     }
     th {
       position: sticky;
@@ -248,7 +273,7 @@
       color: var(--muted);
       z-index: 1;
     }
-    td { max-width: 300px; }
+    td { max-width: 340px; overflow: hidden; text-overflow: ellipsis; }
     .badge {
       display: inline-block;
       border-radius: 999px;
@@ -273,7 +298,8 @@
       line-height: 1.4;
     }
     .ok-box,
-    .error-box {
+    .error-box,
+    .viewer-message {
       margin-top: 18px;
       border-radius: 14px;
       padding: 14px 16px;
@@ -282,15 +308,103 @@
     }
     .ok-box { background: var(--green-soft); color: var(--green); }
     .error-box { background: var(--red-soft); color: var(--red); }
+    .viewer-message.success { display: block; background: var(--green-soft); color: var(--green); }
+    .viewer-message.error { display: block; background: var(--red-soft); color: var(--red); }
+    .viewer-message.loading { display: block; background: var(--blue-soft); color: var(--navy); }
+
+    .viewer-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .viewer-toolbar h3 { margin: 0 0 5px; }
+    .viewer-toolbar p { margin: 0; color: var(--muted); }
+    .viewer-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .firebase-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+    .summary-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 17px;
+      background: #fbfdff;
+    }
+    .summary-card span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 7px; }
+    .summary-card strong { font-size: 24px; }
+
+    .collection-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .collection-card {
+      text-align: left;
+      padding: 16px;
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--text);
+      box-shadow: none;
+    }
+    .collection-card.active { border-color: var(--navy-2); background: var(--blue-soft); }
+    .collection-card strong { display: block; margin-bottom: 7px; word-break: break-word; }
+    .collection-card span { color: var(--muted); font-size: 12px; }
+
+    .collection-panel { display: none; margin-top: 20px; }
+    .collection-panel.visible { display: block; }
+    .collection-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .collection-header h3 { margin: 0 0 4px; }
+    .collection-header p { margin: 0; color: var(--muted); }
+    .collection-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .search-input {
+      min-width: 260px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font: inherit;
+      color: var(--text);
+      background: white;
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--navy-2); box-shadow: 0 0 0 3px rgba(18,77,124,.09); }
+    .check-label { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 13px; }
+    .firebase-table-wrap {
+      max-height: 520px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .firebase-table-wrap table { min-width: 100%; width: max-content; }
+    .sensitive-value { letter-spacing: 2px; color: var(--muted); }
+
+    @media (max-width: 1050px) {
+      .collection-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .firebase-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
 
     @media (max-width: 900px) {
       header { padding: 16px 20px; }
-      main { width: min(100% - 26px, 1220px); }
+      main { width: min(100% - 26px, 1320px); }
       .upload-panel,
       .result-grid { grid-template-columns: 1fr; }
       .actions { flex-direction: row; min-width: 0; }
       .actions button { flex: 1; }
       .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .collection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .firebase-summary { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -300,77 +414,135 @@
       <div class="brand-mark">⇄</div>
       <div>
         <h1>Migrador de Títulos</h1>
-        <p>Seleccionar Excel → analizar → subir</p>
+        <p>Migrar Excel y consultar Firestore</p>
       </div>
     </div>
     <div class="target">Destino fijo<strong>Firestore · titulos-ec2fa</strong></div>
   </header>
 
   <main>
-    <div class="intro">
-      <div>
-        <h2>Migración automática</h2>
-        <p>Selecciona el respaldo de títulos o el Excel de claves de IA. La app separa cada tipo en colecciones principales.</p>
-      </div>
-      <div class="step-pill" id="stepPill">Paso 1 de 3</div>
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="migrationTab">Migrar Excel</button>
+      <button class="mode-tab" id="viewerTab">Consultar Firebase</button>
     </div>
 
-    <section class="panel upload-panel">
-      <div>
-        <h3>Archivo Excel</h3>
-        <p>La app identifica el archivo y muestra las colecciones que se crearán o actualizarán.</p>
+    <section class="view active" id="migrationView">
+      <div class="intro">
+        <div>
+          <h2>Migración automática</h2>
+          <p>Selecciona el respaldo de títulos o el Excel de claves de IA. La app separa cada tipo en colecciones principales.</p>
+        </div>
+        <div class="step-pill" id="stepPill">Paso 1 de 3</div>
+      </div>
 
-        <div class="file-box">
-          <div class="file-icon">📄</div>
-          <div class="file-data">
-            <strong id="fileName">Ningún archivo seleccionado</strong>
-            <span id="fileDetail">Puedes elegir Claves.xlsx o RESPALDO TITULOS APP.xlsx.</span>
+      <section class="panel upload-panel">
+        <div>
+          <h3>Archivo Excel</h3>
+          <p>La app identifica el archivo y muestra las colecciones que se crearán o actualizarán.</p>
+
+          <div class="file-box">
+            <div class="file-icon">📄</div>
+            <div class="file-data">
+              <strong id="fileName">Ningún archivo seleccionado</strong>
+              <span id="fileDetail">Puedes elegir Claves.xlsx o RESPALDO TITULOS APP.xlsx.</span>
+            </div>
+          </div>
+
+          <div class="progress-wrap">
+            <div class="progress-meta">
+              <span id="progressMessage">Esperando archivo</span>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress"><div id="progressBar"></div></div>
           </div>
         </div>
 
-        <div class="progress-wrap">
-          <div class="progress-meta">
-            <span id="progressMessage">Esperando archivo</span>
-            <span id="progressPercent">0%</span>
-          </div>
-          <div class="progress"><div id="progressBar"></div></div>
+        <div class="actions">
+          <button class="secondary" id="selectButton">1. Seleccionar Excel</button>
+          <button class="primary" id="analyzeButton" disabled>2. Analizar</button>
+          <button class="success" id="uploadButton" disabled>3. Subir a Firestore</button>
         </div>
-      </div>
+      </section>
 
-      <div class="actions">
-        <button class="secondary" id="selectButton">1. Seleccionar Excel</button>
-        <button class="primary" id="analyzeButton" disabled>2. Analizar</button>
-        <button class="success" id="uploadButton" disabled>3. Subir a Firestore</button>
-      </div>
+      <div class="error-box" id="errorBox"></div>
+      <div class="ok-box" id="okBox"></div>
+
+      <section class="panel" id="results">
+        <h3 id="resultTitle" style="margin-top:0">Resultado del análisis</h3>
+        <div class="metrics" id="metrics"></div>
+
+        <strong>Colecciones que se crearán o actualizarán</strong>
+        <div class="collections" id="collections"></div>
+        <div id="modeNote"></div>
+
+        <div class="result-grid">
+          <div class="subpanel">
+            <h4 id="previewTitle">Vista previa</h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr id="previewHead"></tr></thead>
+                <tbody id="previewBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="subpanel">
+            <h4>Advertencias</h4>
+            <div class="warnings" id="warnings"></div>
+          </div>
+        </div>
+      </section>
     </section>
 
-    <div class="error-box" id="errorBox"></div>
-    <div class="ok-box" id="okBox"></div>
+    <section class="view" id="viewerView">
+      <div class="intro">
+        <div>
+          <h2>Consulta de Firebase</h2>
+          <p>Lee las colecciones principales, revisa sus documentos y exporta una copia completa a Excel.</p>
+        </div>
+        <div class="step-pill">Lectura directa</div>
+      </div>
 
-    <section class="panel" id="results">
-      <h3 id="resultTitle" style="margin-top:0">Resultado del análisis</h3>
-      <div class="metrics" id="metrics"></div>
-
-      <strong>Colecciones que se crearán o actualizarán</strong>
-      <div class="collections" id="collections"></div>
-      <div id="modeNote"></div>
-
-      <div class="result-grid">
-        <div class="subpanel">
-          <h4 id="previewTitle">Vista previa</h4>
-          <div class="table-wrap">
-            <table>
-              <thead><tr id="previewHead"></tr></thead>
-              <tbody id="previewBody"></tbody>
-            </table>
+      <section class="panel">
+        <div class="viewer-toolbar">
+          <div>
+            <h3>Contenido de Firestore</h3>
+            <p>Proyecto: titulos-ec2fa</p>
+          </div>
+          <div class="viewer-actions">
+            <button class="secondary" id="refreshFirebaseButton">Actualizar datos</button>
+            <button class="success" id="exportAllButton">Exportar todo a Excel</button>
           </div>
         </div>
 
-        <div class="subpanel">
-          <h4>Advertencias</h4>
-          <div class="warnings" id="warnings"></div>
+        <div class="viewer-message" id="viewerMessage"></div>
+        <div class="firebase-summary" id="firebaseSummary"></div>
+        <div class="collection-grid" id="collectionCards"></div>
+      </section>
+
+      <section class="panel collection-panel" id="collectionPanel">
+        <div class="collection-header">
+          <div>
+            <h3 id="collectionTitle">Colección</h3>
+            <p id="collectionMeta">0 documentos</p>
+          </div>
+          <div class="collection-controls">
+            <input class="search-input" id="collectionSearch" type="search" placeholder="Buscar dentro de la colección" />
+            <label class="check-label">
+              <input id="showSensitive" type="checkbox" />
+              Mostrar claves completas
+            </label>
+            <button class="secondary" id="exportCollectionButton">Exportar colección</button>
+          </div>
         </div>
-      </div>
+
+        <div class="firebase-table-wrap">
+          <table>
+            <thead><tr id="firebaseHead"></tr></thead>
+            <tbody id="firebaseBody"></tbody>
+          </table>
+        </div>
+      </section>
     </section>
   </main>
 
@@ -380,7 +552,11 @@
       analyzed: false,
       busy: false,
       type: null,
-      typeLabel: null
+      typeLabel: null,
+      firebaseLoaded: false,
+      activeCollection: null,
+      collectionData: null,
+      showSensitive: false
     };
 
     const $ = (id) => document.getElementById(id);
@@ -400,6 +576,18 @@
     function clearMessages() {
       $('errorBox').style.display = 'none';
       $('okBox').style.display = 'none';
+    }
+
+    function setViewerMessage(message, tone = 'loading') {
+      const box = $('viewerMessage');
+      box.className = `viewer-message ${tone}`;
+      box.textContent = message;
+    }
+
+    function clearViewerMessage() {
+      const box = $('viewerMessage');
+      box.className = 'viewer-message';
+      box.textContent = '';
     }
 
     function setBusy(value) {
@@ -432,6 +620,16 @@
         .replaceAll("'", '&#039;');
     }
 
+    function switchView(viewName) {
+      const migrationActive = viewName === 'migration';
+      $('migrationView').classList.toggle('active', migrationActive);
+      $('viewerView').classList.toggle('active', !migrationActive);
+      $('migrationTab').classList.toggle('active', migrationActive);
+      $('viewerTab').classList.toggle('active', !migrationActive);
+
+      if (!migrationActive && !state.firebaseLoaded) refreshFirebaseSummary();
+    }
+
     function renderAnalysis(data) {
       $('results').style.display = 'block';
       $('resultTitle').textContent = `Resultado: ${data.typeLabel}`;
@@ -455,11 +653,9 @@
         $('modeNote').innerHTML = `
           <div class="structure-note">
             <strong>Estructura final:</strong>
-            cada grupo queda únicamente como
-            <code>colección → documento → campos</code>.
-            Las versiones estarán en <code>versiones_envio</code> y las correcciones en
-            <code>resoluciones</code>. La app respaldará y eliminará automáticamente las
-            subcolecciones antiguas antes de volver a cargar los datos.
+            cada grupo queda como <code>colección → documento → campos</code>.
+            Las versiones están en <code>versiones_envio</code> y las correcciones en
+            <code>resoluciones</code>, sin subcolecciones dentro de los envíos.
           </div>
         `;
         $('previewTitle').textContent = 'Vista previa de envíos';
@@ -491,14 +687,130 @@
       `).join('');
 
       $('warnings').innerHTML = data.warnings.length
-        ? data.warnings
-            .map((warning) => `<div class="warning">${escapeHtml(warning)}</div>`)
-            .join('')
+        ? data.warnings.map((warning) => `<div class="warning">${escapeHtml(warning)}</div>`).join('')
         : '<div style="color:#17865b;padding:8px 0">No se encontraron advertencias importantes.</div>';
+    }
+
+    function renderFirebaseSummary(data) {
+      $('firebaseSummary').innerHTML = `
+        <div class="summary-card"><span>Proyecto</span><strong>${escapeHtml(data.projectId)}</strong></div>
+        <div class="summary-card"><span>Colecciones</span><strong>${data.collections.length}</strong></div>
+        <div class="summary-card"><span>Documentos totales</span><strong>${data.totalDocuments}</strong></div>
+      `;
+
+      $('collectionCards').innerHTML = data.collections.map((item) => `
+        <button class="collection-card ${state.activeCollection === item.name ? 'active' : ''}" data-collection="${escapeHtml(item.name)}">
+          <strong>${escapeHtml(item.name)}</strong>
+          <span>${item.count} documentos · ${item.fields} campos</span>
+        </button>
+      `).join('');
+
+      document.querySelectorAll('.collection-card').forEach((button) => {
+        button.addEventListener('click', () => loadCollection(button.dataset.collection));
+      });
+    }
+
+    async function refreshFirebaseSummary() {
+      try {
+        setViewerMessage('Leyendo colecciones de Firestore…', 'loading');
+        $('refreshFirebaseButton').disabled = true;
+        const data = await window.migrador.obtenerResumenFirebase();
+        state.firebaseLoaded = true;
+        renderFirebaseSummary(data);
+        setViewerMessage(`Lectura completada: ${data.totalDocuments} documentos encontrados.`, 'success');
+      } catch (error) {
+        setViewerMessage(error.message || String(error), 'error');
+      } finally {
+        $('refreshFirebaseButton').disabled = false;
+      }
+    }
+
+    function isSensitiveField(field, row) {
+      const normalized = String(field).toLowerCase();
+      if (/(credencial|secreto|password|token|api.?key)/i.test(normalized)) return true;
+      if (normalized === 'valor' && /(acceso|clave|token|secret|proxy)/i.test(String(row.clave || row.id || ''))) return true;
+      return false;
+    }
+
+    function displayValue(field, value, row) {
+      if (!state.showSensitive && isSensitiveField(field, row) && value != null && value !== '') {
+        return '<span class="sensitive-value">••••••••••••</span>';
+      }
+
+      if (value == null) return '<span style="color:#9aa7b4">—</span>';
+      const text = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      return escapeHtml(text);
+    }
+
+    function filteredDocuments() {
+      if (!state.collectionData) return [];
+      const query = $('collectionSearch').value.trim().toLowerCase();
+      if (!query) return state.collectionData.documents;
+      return state.collectionData.documents.filter((item) => JSON.stringify(item).toLowerCase().includes(query));
+    }
+
+    function renderCollectionTable() {
+      if (!state.collectionData) return;
+      const documents = filteredDocuments();
+      const fields = state.collectionData.fields;
+
+      $('collectionTitle').textContent = state.collectionData.collection;
+      $('collectionMeta').textContent = `${documents.length} de ${state.collectionData.total} documentos visibles`;
+      $('firebaseHead').innerHTML = fields.map((field) => `<th>${escapeHtml(field)}</th>`).join('');
+      $('firebaseBody').innerHTML = documents.length
+        ? documents.map((row) => `
+            <tr>${fields.map((field) => `<td title="${escapeHtml(typeof row[field] === 'object' ? JSON.stringify(row[field]) : row[field])}">${displayValue(field, row[field], row)}</td>`).join('')}</tr>
+          `).join('')
+        : `<tr><td colspan="${fields.length}">No hay documentos que coincidan con la búsqueda.</td></tr>`;
+    }
+
+    async function loadCollection(collectionName) {
+      try {
+        state.activeCollection = collectionName;
+        setViewerMessage(`Leyendo ${collectionName}…`, 'loading');
+        const data = await window.migrador.leerColeccionFirebase(collectionName);
+        state.collectionData = data;
+        $('collectionPanel').classList.add('visible');
+        $('collectionSearch').value = '';
+        renderCollectionTable();
+        document.querySelectorAll('.collection-card').forEach((button) => {
+          button.classList.toggle('active', button.dataset.collection === collectionName);
+        });
+        clearViewerMessage();
+      } catch (error) {
+        setViewerMessage(error.message || String(error), 'error');
+      }
+    }
+
+    async function exportFirebase(collectionNames) {
+      try {
+        setViewerMessage('Preparando archivo Excel…', 'loading');
+        const result = await window.migrador.exportarFirebase(collectionNames);
+        if (!result) {
+          clearViewerMessage();
+          return;
+        }
+        setViewerMessage(`Exportación completada: ${result.filePath}`, 'success');
+      } catch (error) {
+        setViewerMessage(error.message || String(error), 'error');
+      }
     }
 
     window.migrador.onProgreso(({ percent, message, tone }) => {
       setProgress(percent, message, tone);
+    });
+
+    $('migrationTab').addEventListener('click', () => switchView('migration'));
+    $('viewerTab').addEventListener('click', () => switchView('viewer'));
+    $('refreshFirebaseButton').addEventListener('click', refreshFirebaseSummary);
+    $('exportAllButton').addEventListener('click', () => exportFirebase([]));
+    $('exportCollectionButton').addEventListener('click', () => {
+      if (state.activeCollection) exportFirebase([state.activeCollection]);
+    });
+    $('collectionSearch').addEventListener('input', renderCollectionTable);
+    $('showSensitive').addEventListener('change', (event) => {
+      state.showSensitive = event.target.checked;
+      renderCollectionTable();
     });
 
     $('selectButton').addEventListener('click', async () => {
@@ -557,10 +869,7 @@
         ? 'Se subirán también las credenciales y secretos del Excel.'
         : 'La app creará un respaldo, eliminará la estructura antigua de envíos y generará colecciones principales sin subcolecciones.';
 
-      const accepted = confirm(
-        `Se modificará Firestore en titulos-ec2fa. ${detail} ¿Continuar?`
-      );
-
+      const accepted = confirm(`Se modificará Firestore en titulos-ec2fa. ${detail} ¿Continuar?`);
       if (!accepted) return;
 
       try {
@@ -576,6 +885,7 @@
           `Se realizaron ${result.totalWrites} escrituras.${cleanupText} ` +
           `Respaldo local: ${result.backupPath}`
         );
+        state.firebaseLoaded = false;
       } catch (error) {
         setProgress(0, 'La migración no pudo completarse', 'error');
         showError(error.message || String(error));
