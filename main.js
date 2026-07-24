@@ -17,6 +17,15 @@ const FIREBASE_CONFIG = {
   measurementId: 'G-4MC529QMW9'
 };
 
+const TITLE_COLLECTIONS = {
+  envios: 'envios',
+  versions: 'versiones_envio',
+  resolutions: 'resoluciones',
+  periods: 'periodos',
+  careers: 'carreras',
+  coordinators: 'coordinadores'
+};
+
 let mainWindow = null;
 let selectedExcelPath = null;
 let selectedWorkbookType = null;
@@ -106,7 +115,7 @@ function slug(value) {
   return normalizeText(value)
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '')
-    .slice(0, 120);
+    .slice(0, 140);
 }
 
 function stableHash(value, length = 12) {
@@ -172,9 +181,19 @@ function normalizeCedula(value) {
 }
 
 const MONTHS = {
-  enero: '01', febrero: '02', marzo: '03', abril: '04', mayo: '05', junio: '06',
-  julio: '07', agosto: '08', septiembre: '09', setiembre: '09', octubre: '10',
-  noviembre: '11', diciembre: '12'
+  enero: '01',
+  febrero: '02',
+  marzo: '03',
+  abril: '04',
+  mayo: '05',
+  junio: '06',
+  julio: '07',
+  agosto: '08',
+  septiembre: '09',
+  setiembre: '09',
+  octubre: '10',
+  noviembre: '11',
+  diciembre: '12'
 };
 
 function normalizePeriod(value) {
@@ -183,11 +202,17 @@ function normalizePeriod(value) {
 
   const direct = original.match(/(20\d{2})[-_/](\d{2}).*?(20\d{2})[-_/](\d{2})/);
   if (direct) {
-    return { id: `${direct[1]}-${direct[2]}__${direct[3]}-${direct[4]}`, label: original };
+    return {
+      id: `${direct[1]}-${direct[2]}__${direct[3]}-${direct[4]}`,
+      label: original
+    };
   }
 
   const normalized = normalizeText(original);
-  const matches = [...normalized.matchAll(/(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\s+(20\d{2})/g)];
+  const matches = [...normalized.matchAll(
+    /(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\s+(20\d{2})/g
+  )];
+
   if (matches.length >= 2) {
     return {
       id: `${matches[0][2]}-${MONTHS[matches[0][1]]}__${matches[1][2]}-${MONTHS[matches[1][1]]}`,
@@ -205,7 +230,14 @@ function excelDateToIso(value) {
   if (typeof value === 'number') {
     const parsed = XLSX.SSF.parse_date_code(value);
     if (parsed) {
-      return new Date(Date.UTC(parsed.y, parsed.m - 1, parsed.d, parsed.H, parsed.M, Math.floor(parsed.S))).toISOString();
+      return new Date(Date.UTC(
+        parsed.y,
+        parsed.m - 1,
+        parsed.d,
+        parsed.H,
+        parsed.M,
+        Math.floor(parsed.S)
+      )).toISOString();
     }
   }
 
@@ -229,17 +261,79 @@ function normalizeStatus(value, fallback = 'PENDIENTE_REVISION') {
   if (text.includes('resuelt')) return 'RESUELTO';
   if (text.includes('enviad')) return 'ENVIADO';
   if (text.includes('pendient')) return 'PENDIENTE_REVISION';
-  if (text.includes('activo')) return 'ACTIVO';
   if (text.includes('inactivo')) return 'INACTIVO';
+  if (text.includes('activo')) return 'ACTIVO';
   return text.toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+}
+
+function parseBoolean(value) {
+  if (typeof value === 'boolean') return value;
+  const text = normalizeText(value);
+  if (['true', 'verdadero', 'si', 'sí', '1', 'ok'].includes(text)) return true;
+  if (['false', 'falso', 'no', '0'].includes(text)) return false;
+  return false;
 }
 
 function normalizeCellValue(value) {
   if (value == null || value === '') return null;
   if (typeof value === 'boolean' || typeof value === 'number') return value;
-  const iso = excelDateToIso(value);
-  if (iso && /^\d{4}-\d{2}-\d{2}T/.test(String(value))) return iso;
   return cleanString(value);
+}
+
+function buildStudentIndex(indiceRows) {
+  const studentIndex = new Map();
+  const careers = new Map();
+  const careerByName = new Map();
+  const periods = new Map();
+
+  for (const row of indiceRows) {
+    const cedula = normalizeCedula(pick(row, ['cedula', 'Cédula', 'numeroIdentificacion']));
+    const period = normalizePeriod(pick(row, ['periodoId', 'periodoLabel', 'Periodo']));
+    const careerName = cleanString(pick(row, ['nombreCarrera', 'Carrera']));
+    const careerCode = cleanString(pick(row, ['codigoCarrera', 'Código carrera']));
+    if (!cedula) continue;
+
+    const careerId = careerCode
+      ? slug(careerCode)
+      : `carrera_${stableHash(careerName || 'sin_carrera')}`;
+
+    const snapshot = compactObject({
+      cedula,
+      nombres: cleanString(pick(row, ['nombres', 'Estudiante', 'Nombres'])),
+      carreraId: careerId,
+      carreraCodigo: careerCode,
+      carreraNombre: careerName,
+      periodoId: period.id,
+      periodoNombre: cleanString(pick(row, ['periodoLabel'])) || period.label,
+      sede: cleanString(pick(row, ['sede'])),
+      modalidad: cleanString(pick(row, ['modalidad'])),
+      estadoMatricula: cleanString(pick(row, ['estadoMatricula'])),
+      correoInstitucional: cleanString(pick(row, ['correoInstitucional'])),
+      correoPersonal: cleanString(pick(row, ['correoPersonal'])),
+      celular: String(pick(row, ['celular']) ?? '').replace(/\D/g, '') || null
+    });
+
+    studentIndex.set(`${period.id}__${cedula}`, snapshot);
+    if (!studentIndex.has(cedula)) studentIndex.set(cedula, snapshot);
+
+    periods.set(period.id, {
+      id: period.id,
+      nombre: snapshot.periodoNombre || period.label,
+      activo: false
+    });
+
+    if (careerName) {
+      careers.set(careerId, {
+        id: careerId,
+        codigo: careerCode,
+        nombre: careerName,
+        activo: true
+      });
+      careerByName.set(normalizeText(careerName), careerId);
+    }
+  }
+
+  return { studentIndex, careers, careerByName, periods };
 }
 
 function analyzeTitlesWorkbook(filePath, workbook) {
@@ -252,46 +346,15 @@ function analyzeTitlesWorkbook(filePath, workbook) {
   if (!enviosRows.length) throw new Error('La hoja Envios está vacía o no existe.');
 
   const warnings = [];
-  const studentIndex = new Map();
-  const careerByName = new Map();
-  const periods = new Map();
-  const careers = new Map();
+  const {
+    studentIndex,
+    careers,
+    careerByName,
+    periods
+  } = buildStudentIndex(indiceRows);
 
-  for (const row of indiceRows) {
-    const cedula = normalizeCedula(pick(row, ['cedula', 'Cédula', 'numeroIdentificacion']));
-    const period = normalizePeriod(pick(row, ['periodoId', 'periodoLabel', 'Periodo']));
-    const careerName = cleanString(pick(row, ['nombreCarrera', 'Carrera']));
-    const careerCode = cleanString(pick(row, ['codigoCarrera', 'Código carrera']));
-    if (!cedula) continue;
+  const groupedVersions = new Map();
 
-    const careerId = careerCode ? slug(careerCode) : `carrera_${stableHash(careerName || 'sin_carrera')}`;
-    const snapshot = compactObject({
-      cedula,
-      nombres: cleanString(pick(row, ['nombres', 'Estudiante', 'Nombres'])),
-      carreraId: careerId,
-      carreraCodigo: careerCode,
-      carreraNombre: careerName,
-      periodoId: period.id,
-      periodoLabel: cleanString(pick(row, ['periodoLabel'])) || period.label,
-      sede: cleanString(pick(row, ['sede'])),
-      modalidad: cleanString(pick(row, ['modalidad'])),
-      estadoMatricula: cleanString(pick(row, ['estadoMatricula'])),
-      correoInstitucional: cleanString(pick(row, ['correoInstitucional'])),
-      correoPersonal: cleanString(pick(row, ['correoPersonal'])),
-      celular: String(pick(row, ['celular']) ?? '').replace(/\D/g, '') || null
-    });
-
-    studentIndex.set(`${period.id}__${cedula}`, snapshot);
-    if (!studentIndex.has(cedula)) studentIndex.set(cedula, snapshot);
-
-    periods.set(period.id, { id: period.id, nombre: snapshot.periodoLabel || period.label, activo: false });
-    if (careerName) {
-      careers.set(careerId, { id: careerId, codigo: careerCode, nombre: careerName, activo: true });
-      careerByName.set(normalizeText(careerName), careerId);
-    }
-  }
-
-  const groups = new Map();
   for (const [index, row] of enviosRows.entries()) {
     const cedula = normalizeCedula(pick(row, ['Cédula', 'cedula', 'numeroIdentificacion']));
     const period = normalizePeriod(pick(row, ['Periodo', 'periodoId']));
@@ -300,11 +363,11 @@ function analyzeTitlesWorkbook(filePath, workbook) {
       continue;
     }
 
-    const key = `${period.id}__${cedula}`;
+    const envioId = `${period.id}__${cedula}`;
     const serverDate = excelDateToIso(pick(row, ['Fecha servidor']));
     const sentDate = excelDateToIso(pick(row, ['Fecha envío'])) || serverDate;
     const careerName = cleanString(pick(row, ['Carrera', 'nombreCarrera']));
-    const indexSnapshot = studentIndex.get(key) || studentIndex.get(cedula) || {};
+    const indexSnapshot = studentIndex.get(envioId) || studentIndex.get(cedula) || {};
     const careerId = indexSnapshot.carreraId
       || careerByName.get(normalizeText(careerName))
       || `carrera_${stableHash(careerName || 'sin_carrera')}`;
@@ -321,16 +384,12 @@ function analyzeTitlesWorkbook(filePath, workbook) {
 
     periods.set(period.id, { id: period.id, nombre: period.label, activo: false });
 
-    const titles = [1, 2, 3].map((number) => ({
-      numero: number,
-      titulo: cleanString(pick(row, [`Título ${number}`, `Titulo ${number}`, `Titulo${number}`]))
-    })).filter((item) => item.titulo);
-
     const version = compactObject({
       filaOrigen: index + 2,
       idOrigen: cleanString(pick(row, ['ID registro'])),
       fechaServidor: serverDate,
       fechaEnvio: sentDate,
+      envioId,
       cedula,
       nombres: cleanString(pick(row, ['Estudiante', 'Nombres'])) || indexSnapshot.nombres,
       carreraId: careerId,
@@ -338,9 +397,9 @@ function analyzeTitlesWorkbook(filePath, workbook) {
       periodoId: period.id,
       periodoNombre: period.label,
       telegram: cleanString(pick(row, ['Telegram'])),
-      titulo1: titles.find((item) => item.numero === 1)?.titulo || null,
-      titulo2: titles.find((item) => item.numero === 2)?.titulo || null,
-      titulo3: titles.find((item) => item.numero === 3)?.titulo || null,
+      titulo1: cleanString(pick(row, ['Título 1', 'Titulo 1', 'Titulo1'])),
+      titulo2: cleanString(pick(row, ['Título 2', 'Titulo 2', 'Titulo2'])),
+      titulo3: cleanString(pick(row, ['Título 3', 'Titulo 3', 'Titulo3'])),
       tituloPreferidoNumero: Number(pick(row, ['Preferido'])) || null,
       estadoFirebase: normalizeStatus(pick(row, ['Estado Firebase']), 'ENVIADO'),
       estadoGoogleSheets: normalizeStatus(pick(row, ['Estado Google Sheets']), 'RESPALDADO'),
@@ -353,16 +412,17 @@ function analyzeTitlesWorkbook(filePath, workbook) {
       titulo1: version.titulo1,
       titulo2: version.titulo2,
       titulo3: version.titulo3,
-      preferido: version.tituloPreferidoNumero,
+      tituloPreferidoNumero: version.tituloPreferidoNumero,
       estado: version.estado,
       observacion: version.observacion
     }), 20);
 
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(version);
+    if (!groupedVersions.has(envioId)) groupedVersions.set(envioId, []);
+    groupedVersions.get(envioId).push(version);
   }
 
-  const resolutionsByEnvio = new Map();
+  const groupedResolutions = new Map();
+
   for (const [index, row] of resolucionesRows.entries()) {
     const cedula = normalizeCedula(pick(row, ['Cédula', 'cedula']));
     const period = normalizePeriod(pick(row, ['Periodo', 'periodoId']));
@@ -378,6 +438,7 @@ function analyzeTitlesWorkbook(filePath, workbook) {
       fechaServidor: excelDateToIso(pick(row, ['Fecha servidor'])),
       fechaResolucion: excelDateToIso(pick(row, ['Fecha resolución', 'Fecha resolucion']))
         || excelDateToIso(pick(row, ['Fecha servidor'])),
+      envioId,
       cedula,
       nombres: cleanString(pick(row, ['Estudiante'])),
       carreraNombre: cleanString(pick(row, ['Carrera'])),
@@ -393,25 +454,28 @@ function analyzeTitlesWorkbook(filePath, workbook) {
     resolution.ordenFecha = dateMillis(resolution.fechaResolucion || resolution.fechaServidor);
     resolution.firma = stableHash(JSON.stringify({
       estado: resolution.estado,
-      titulo: resolution.tituloCorregido || resolution.tituloElegido,
+      tituloElegido: resolution.tituloElegido,
+      tituloCorregido: resolution.tituloCorregido,
       observacion: resolution.observacion,
       coordinador: resolution.coordinador
     }), 20);
 
-    if (!resolutionsByEnvio.has(envioId)) resolutionsByEnvio.set(envioId, []);
-    resolutionsByEnvio.get(envioId).push(resolution);
+    if (!groupedResolutions.has(envioId)) groupedResolutions.set(envioId, []);
+    groupedResolutions.get(envioId).push(resolution);
   }
 
   const envios = [];
+  const versions = [];
+  const resolutions = [];
   let duplicateRows = 0;
-  let uniqueResolutionCount = 0;
 
-  for (const [envioId, versions] of groups.entries()) {
-    versions.sort((a, b) => a.ordenFecha - b.ordenFecha || a.filaOrigen - b.filaOrigen);
+  for (const [envioId, rawVersions] of groupedVersions.entries()) {
+    rawVersions.sort((a, b) => a.ordenFecha - b.ordenFecha || a.filaOrigen - b.filaOrigen);
+
     const uniqueVersions = [];
     const versionSignatures = new Set();
 
-    for (const version of versions) {
+    for (const version of rawVersions) {
       if (versionSignatures.has(version.firma)) {
         duplicateRows += 1;
         continue;
@@ -420,68 +484,128 @@ function analyzeTitlesWorkbook(filePath, workbook) {
       uniqueVersions.push(version);
     }
 
-    const current = uniqueVersions.at(-1) || versions.at(-1);
-    const resolutions = (resolutionsByEnvio.get(envioId) || [])
+    const rawResolutions = (groupedResolutions.get(envioId) || [])
       .sort((a, b) => a.ordenFecha - b.ordenFecha || a.filaOrigen - b.filaOrigen);
+
     const uniqueResolutions = [];
     const resolutionSignatures = new Set();
 
-    for (const resolution of resolutions) {
+    for (const resolution of rawResolutions) {
       if (resolutionSignatures.has(resolution.firma)) continue;
       resolutionSignatures.add(resolution.firma);
       uniqueResolutions.push(resolution);
     }
 
-    uniqueResolutionCount += uniqueResolutions.length;
+    const currentVersion = uniqueVersions.at(-1) || rawVersions.at(-1);
     const currentResolution = uniqueResolutions.at(-1) || null;
-    const snapshot = studentIndex.get(envioId) || studentIndex.get(current.cedula) || {};
-    const preferredNumber = current.tituloPreferidoNumero;
-    const preferredText = preferredNumber ? current[`titulo${preferredNumber}`] : null;
+    const snapshot = studentIndex.get(envioId) || studentIndex.get(currentVersion.cedula) || {};
+    const preferredNumber = currentVersion.tituloPreferidoNumero;
+    const preferredText = preferredNumber ? currentVersion[`titulo${preferredNumber}`] : null;
     const finalTitle = currentResolution?.tituloCorregido
       || currentResolution?.tituloElegido
       || preferredText
-      || current.titulo1
-      || current.titulo2
-      || current.titulo3
+      || currentVersion.titulo1
+      || currentVersion.titulo2
+      || currentVersion.titulo3
       || null;
 
-    const cleanVersions = uniqueVersions.map(({ ordenFecha: _orden, firma: _firma, ...item }) => item);
-    const cleanResolutions = uniqueResolutions.map(({ ordenFecha: _orden, firma: _firma, ...item }) => item);
+    let currentVersionId = null;
+    for (let index = 0; index < uniqueVersions.length; index += 1) {
+      const item = uniqueVersions[index];
+      const versionId = `${envioId}__v${String(index + 1).padStart(3, '0')}__${item.firma.slice(0, 8)}`;
+      currentVersionId = versionId;
+      versions.push(compactObject({
+        id: versionId,
+        envioId,
+        cedula: item.cedula,
+        nombres: item.nombres,
+        periodoId: item.periodoId,
+        periodoNombre: item.periodoNombre,
+        carreraId: item.carreraId,
+        carreraNombre: item.carreraNombre,
+        numeroVersion: index + 1,
+        esActual: index === uniqueVersions.length - 1,
+        titulo1: item.titulo1,
+        titulo2: item.titulo2,
+        titulo3: item.titulo3,
+        tituloPreferidoNumero: item.tituloPreferidoNumero,
+        tituloPreferido: item.tituloPreferidoNumero
+          ? item[`titulo${item.tituloPreferidoNumero}`]
+          : null,
+        telegram: item.telegram,
+        estado: item.estado,
+        estadoFirebase: item.estadoFirebase,
+        estadoGoogleSheets: item.estadoGoogleSheets,
+        observacion: item.observacion,
+        fechaEnvio: item.fechaEnvio,
+        fechaServidor: item.fechaServidor,
+        filaOrigen: item.filaOrigen,
+        idOrigen: item.idOrigen
+      }));
+    }
+
+    let currentResolutionId = null;
+    for (let index = 0; index < uniqueResolutions.length; index += 1) {
+      const item = uniqueResolutions[index];
+      const resolutionId = `${envioId}__r${String(index + 1).padStart(3, '0')}__${item.firma.slice(0, 8)}`;
+      currentResolutionId = resolutionId;
+      resolutions.push(compactObject({
+        id: resolutionId,
+        envioId,
+        cedula: item.cedula,
+        nombres: item.nombres,
+        periodoId: item.periodoId,
+        periodoNombre: item.periodoNombre,
+        carreraNombre: item.carreraNombre,
+        numeroResolucion: index + 1,
+        esActual: index === uniqueResolutions.length - 1,
+        coordinador: item.coordinador,
+        estado: item.estado,
+        tituloElegido: item.tituloElegido,
+        tituloCorregido: item.tituloCorregido,
+        tituloFinal: item.tituloCorregido || item.tituloElegido,
+        observacion: item.observacion,
+        fechaResolucion: item.fechaResolucion,
+        fechaServidor: item.fechaServidor,
+        filaOrigen: item.filaOrigen,
+        idOrigen: item.idOrigen
+      }));
+    }
 
     envios.push(compactObject({
       id: envioId,
-      cedula: current.cedula,
-      nombres: current.nombres || snapshot.nombres,
-      periodoId: current.periodoId,
-      periodoNombre: current.periodoNombre,
-      carreraId: current.carreraId,
+      cedula: currentVersion.cedula,
+      nombres: currentVersion.nombres || snapshot.nombres,
+      periodoId: currentVersion.periodoId,
+      periodoNombre: currentVersion.periodoNombre,
+      carreraId: currentVersion.carreraId,
       carreraCodigo: snapshot.carreraCodigo,
-      carreraNombre: current.carreraNombre || snapshot.carreraNombre,
+      carreraNombre: currentVersion.carreraNombre || snapshot.carreraNombre,
       sede: snapshot.sede,
       modalidad: snapshot.modalidad,
       correoInstitucional: snapshot.correoInstitucional,
       correoPersonal: snapshot.correoPersonal,
       celular: snapshot.celular,
-      telegram: current.telegram,
-      titulo1: current.titulo1,
-      titulo2: current.titulo2,
-      titulo3: current.titulo3,
+      telegram: currentVersion.telegram,
+      titulo1: currentVersion.titulo1,
+      titulo2: currentVersion.titulo2,
+      titulo3: currentVersion.titulo3,
       tituloPreferidoNumero: preferredNumber,
       tituloPreferido: preferredText,
-      tituloElegido: currentResolution?.tituloElegido || null,
-      tituloCorregido: currentResolution?.tituloCorregido || null,
+      tituloElegido: currentResolution?.tituloElegido,
+      tituloCorregido: currentResolution?.tituloCorregido,
       tituloFinal: finalTitle,
-      estado: currentResolution?.estado || current.estado || 'PENDIENTE_REVISION',
-      observacion: currentResolution?.observacion || current.observacion,
+      estado: currentResolution?.estado || currentVersion.estado || 'PENDIENTE_REVISION',
+      observacion: currentResolution?.observacion || currentVersion.observacion,
       coordinador: currentResolution?.coordinador,
-      fechaEnvio: current.fechaEnvio || current.fechaServidor,
+      fechaEnvio: currentVersion.fechaEnvio || currentVersion.fechaServidor,
       fechaResolucion: currentResolution?.fechaResolucion || currentResolution?.fechaServidor,
-      estadoFirebase: current.estadoFirebase,
-      estadoGoogleSheets: current.estadoGoogleSheets,
-      versionActual: cleanVersions.length,
-      resolucionesTotal: cleanResolutions.length,
-      historialVersiones: cleanVersions,
-      historialResoluciones: cleanResolutions,
+      estadoFirebase: currentVersion.estadoFirebase,
+      estadoGoogleSheets: currentVersion.estadoGoogleSheets,
+      versionActual: uniqueVersions.length,
+      versionActualId: currentVersionId,
+      resolucionesTotal: uniqueResolutions.length,
+      resolucionActualId: currentResolutionId,
       requiereRevision: false
     }));
   }
@@ -491,19 +615,48 @@ function analyzeTitlesWorkbook(filePath, workbook) {
     const period = normalizePeriod(pick(row, ['Periodo', 'periodoId']));
     if (!cedula) continue;
 
-    const id = `${period.id}__${cedula}`;
-    if (groups.has(id)) continue;
+    const envioId = `${period.id}__${cedula}`;
+    if (groupedVersions.has(envioId)) continue;
 
     const estado = normalizeStatus(pick(row, ['Estado']), 'PENDIENTE_REVISION');
     const hasSubmission = normalizeText(pick(row, ['Tiene envío', 'Tiene envio']));
     if (!hasSubmission.includes('si') && estado === 'PENDIENTE_REVISION') continue;
 
-    const snapshot = studentIndex.get(id) || studentIndex.get(cedula) || {};
-    const relatedResolutions = (resolutionsByEnvio.get(id) || []).map(({ ordenFecha: _orden, firma: _firma, ...item }) => item);
+    const snapshot = studentIndex.get(envioId) || studentIndex.get(cedula) || {};
+    const relatedResolutions = (groupedResolutions.get(envioId) || [])
+      .sort((a, b) => a.ordenFecha - b.ordenFecha || a.filaOrigen - b.filaOrigen);
     const currentResolution = relatedResolutions.at(-1) || null;
 
+    let currentResolutionId = null;
+    for (let index = 0; index < relatedResolutions.length; index += 1) {
+      const item = relatedResolutions[index];
+      const resolutionId = `${envioId}__r${String(index + 1).padStart(3, '0')}__${item.firma.slice(0, 8)}`;
+      currentResolutionId = resolutionId;
+      resolutions.push(compactObject({
+        id: resolutionId,
+        envioId,
+        cedula,
+        nombres: item.nombres || snapshot.nombres,
+        periodoId: period.id,
+        periodoNombre: period.label,
+        carreraNombre: item.carreraNombre || snapshot.carreraNombre,
+        numeroResolucion: index + 1,
+        esActual: index === relatedResolutions.length - 1,
+        coordinador: item.coordinador,
+        estado: item.estado,
+        tituloElegido: item.tituloElegido,
+        tituloCorregido: item.tituloCorregido,
+        tituloFinal: item.tituloCorregido || item.tituloElegido,
+        observacion: item.observacion,
+        fechaResolucion: item.fechaResolucion,
+        fechaServidor: item.fechaServidor,
+        filaOrigen: item.filaOrigen,
+        idOrigen: item.idOrigen
+      }));
+    }
+
     envios.push(compactObject({
-      id,
+      id: envioId,
       cedula,
       nombres: cleanString(pick(row, ['Estudiante', 'Nombres'])) || snapshot.nombres,
       periodoId: period.id,
@@ -516,20 +669,19 @@ function analyzeTitlesWorkbook(filePath, workbook) {
       telegram: cleanString(pick(row, ['Telegram'])),
       tituloElegido: currentResolution?.tituloElegido,
       tituloCorregido: currentResolution?.tituloCorregido,
-      tituloFinal: currentResolution?.tituloCorregido || currentResolution?.tituloElegido || null,
+      tituloFinal: currentResolution?.tituloCorregido || currentResolution?.tituloElegido,
       estado: currentResolution?.estado || estado,
       observacion: currentResolution?.observacion,
       coordinador: currentResolution?.coordinador,
       fechaResolucion: currentResolution?.fechaResolucion,
       versionActual: 0,
       resolucionesTotal: relatedResolutions.length,
-      historialVersiones: [],
-      historialResoluciones: relatedResolutions,
+      resolucionActualId: currentResolutionId,
       datosIncompletosOrigen: true,
       requiereRevision: true
     }));
 
-    warnings.push(`Se recuperó ${id} desde Estudiantes, pero no tiene los tres títulos completos en Envios.`);
+    warnings.push(`Se recuperó ${envioId} desde Estudiantes, pero no tiene títulos completos en Envios.`);
   }
 
   const coordinators = new Map();
@@ -542,7 +694,6 @@ function analyzeTitlesWorkbook(filePath, workbook) {
       .split('|')
       .map((item) => item.trim())
       .filter(Boolean);
-
     const careerIds = careerNames
       .map((careerName) => careerByName.get(normalizeText(careerName)))
       .filter(Boolean);
@@ -551,10 +702,11 @@ function analyzeTitlesWorkbook(filePath, workbook) {
       id,
       nombre: name,
       telegram: cleanString(pick(row, ['Telegram'])),
-      carrerasIds: [...new Set(careerIds)],
-      carrerasNombres: careerNames,
+      carrerasIds: [...new Set(careerIds)].join('|') || null,
+      carrerasNombres: careerNames.join('|') || null,
       estado: normalizeStatus(pick(row, ['Estado']), 'ACTIVO'),
-      actualizadoEn: excelDateToIso(pick(row, ['Fecha'])) || excelDateToIso(pick(row, ['Fecha servidor']))
+      actualizadoEnOrigen: excelDateToIso(pick(row, ['Fecha']))
+        || excelDateToIso(pick(row, ['Fecha servidor']))
     }));
   }
 
@@ -570,30 +722,35 @@ function analyzeTitlesWorkbook(filePath, workbook) {
     careers: [...careers.values()],
     coordinators: [...coordinators.values()],
     envios,
+    versions,
+    resolutions,
     warnings: warnings.slice(0, 100),
     summary: {
       archivo: path.basename(filePath),
       enviosOriginales: enviosRows.length,
       enviosConsolidados: envios.length,
+      versionesUnicas: versions.length,
       filasDuplicadas: duplicateRows,
       resolucionesOriginales: resolucionesRows.length,
-      resolucionesUnicas: uniqueResolutionCount,
+      resolucionesUnicas: resolutions.length,
       coordinadores: coordinators.size,
       periodos: periods.size,
       carreras: careers.size,
       advertencias: warnings.length
     },
     metrics: [
-      { label: 'Filas de envíos', value: enviosRows.length },
-      { label: 'Envíos organizados', value: envios.length },
-      { label: 'Resoluciones únicas', value: uniqueResolutionCount },
+      { label: 'Envíos', value: envios.length },
+      { label: 'Versiones', value: versions.length },
+      { label: 'Resoluciones', value: resolutions.length },
       { label: 'Duplicados descartados', value: duplicateRows }
     ],
     collections: [
-      { name: 'periodos', count: periods.size },
-      { name: 'carreras', count: careers.size },
-      { name: 'coordinadores', count: coordinators.size },
-      { name: 'envios', count: envios.length },
+      { name: TITLE_COLLECTIONS.envios, count: envios.length },
+      { name: TITLE_COLLECTIONS.versions, count: versions.length },
+      { name: TITLE_COLLECTIONS.resolutions, count: resolutions.length },
+      { name: TITLE_COLLECTIONS.periods, count: periods.size },
+      { name: TITLE_COLLECTIONS.careers, count: careers.size },
+      { name: TITLE_COLLECTIONS.coordinators, count: coordinators.size },
       { name: 'configuracion', count: 1 },
       { name: 'migraciones', count: 1 }
     ],
@@ -614,10 +771,11 @@ function analyzeKeysWorkbook(filePath, workbook) {
 
   const ia = iaRows
     .map((row, index) => {
-      const id = cleanString(pick(row, ['id'])) || `ia_${index + 1}`;
+      const rawId = cleanString(pick(row, ['id'])) || `ia_${index + 1}`;
       if (!cleanString(pick(row, ['nombre'])) && !cleanString(pick(row, ['credencial']))) return null;
+
       return compactObject({
-        id: slug(id) || `ia_${index + 1}`,
+        id: slug(rawId) || `ia_${index + 1}`,
         nombre: cleanString(pick(row, ['nombre'])),
         tipo: cleanString(pick(row, ['tipo'])),
         endpoint: cleanString(pick(row, ['endpoint'])),
@@ -629,7 +787,7 @@ function analyzeKeysWorkbook(filePath, workbook) {
         maxTokens: Number(pick(row, ['maxTokens'])) || null,
         temperatura: Number(pick(row, ['temperatura'])) || 0,
         descripcion: cleanString(pick(row, ['descripcion'])),
-        ultimaPruebaOk: Boolean(pick(row, ['ultimaPruebaOk'])),
+        ultimaPruebaOk: parseBoolean(pick(row, ['ultimaPruebaOk'])),
         ultimaPruebaEn: excelDateToIso(pick(row, ['ultimaPruebaEn'])),
         ultimaLatenciaMs: Number(pick(row, ['ultimaLatenciaMs'])) || null,
         ultimoError: cleanString(pick(row, ['ultimoError'])),
@@ -642,6 +800,7 @@ function analyzeKeysWorkbook(filePath, workbook) {
     .map((row, index) => {
       const key = cleanString(pick(row, ['clave'])) || `servicio_${index + 1}`;
       if (!cleanString(pick(row, ['nombre'])) && !cleanString(pick(row, ['endpoint']))) return null;
+
       return compactObject({
         id: slug(key) || `servicio_${index + 1}`,
         clave: key,
@@ -663,7 +822,8 @@ function analyzeKeysWorkbook(filePath, workbook) {
     .map((row, index) => {
       const key = cleanString(pick(row, ['clave'])) || `config_${index + 1}`;
       const value = pick(row, ['valor']);
-      if (!cleanString(key) || value == null || value === '') return null;
+      if (!key || value == null || value === '') return null;
+
       return compactObject({
         id: slug(key) || `config_${index + 1}`,
         clave: key,
@@ -728,6 +888,7 @@ function serializeFirestoreValue(value) {
   if (value == null) return value;
   if (value instanceof Date) return value.toISOString();
   if (Array.isArray(value)) return value.map(serializeFirestoreValue);
+
   if (typeof value === 'object') {
     if (typeof value.toDate === 'function') {
       try {
@@ -736,10 +897,14 @@ function serializeFirestoreValue(value) {
         return String(value);
       }
     }
+
     const output = {};
-    for (const [key, item] of Object.entries(value)) output[key] = serializeFirestoreValue(item);
+    for (const [key, item] of Object.entries(value)) {
+      output[key] = serializeFirestoreValue(item);
+    }
     return output;
   }
+
   return value;
 }
 
@@ -752,34 +917,85 @@ async function getClientDatabase() {
   return getFirestore(clientApp);
 }
 
-async function createLocalBackup(db, result, migrationId) {
-  const { doc, getDoc } = require('firebase/firestore');
-  const documents = [];
-  const targets = [];
-
-  if (result.type === 'titulos') {
-    for (const item of result.envios) targets.push(['envios', item.id]);
-  } else {
-    for (const item of result.ia) targets.push(['ia', item.id]);
-    for (const item of result.services) targets.push(['servicios', item.id]);
-    for (const item of result.configurations) targets.push(['configuracion', item.id]);
+async function commitDeleteRefs(db, refs) {
+  const { writeBatch } = require('firebase/firestore');
+  for (let start = 0; start < refs.length; start += 400) {
+    const batch = writeBatch(db);
+    for (const reference of refs.slice(start, start + 400)) batch.delete(reference);
+    await batch.commit();
   }
+}
 
-  for (let index = 0; index < targets.length; index += 1) {
-    const [collectionName, documentId] = targets[index];
-    const snapshot = await getDoc(doc(db, collectionName, documentId));
+async function getAllDocumentRefs(db, collectionName) {
+  const { collection, getDocs } = require('firebase/firestore');
+  const snapshot = await getDocs(collection(db, collectionName));
+  return snapshot.docs.map((item) => item.ref);
+}
+
+async function createLocalBackup(db, result, migrationId) {
+  const { collection, doc, getDoc, getDocs } = require('firebase/firestore');
+  const documents = [];
+
+  async function captureDocument(reference, displayPath) {
+    const snapshot = await getDoc(reference);
     if (snapshot.exists()) {
       documents.push({
-        path: `${collectionName}/${documentId}`,
+        path: displayPath,
         data: serializeFirestoreValue(snapshot.data())
       });
     }
+  }
 
-    if ((index + 1) % 10 === 0 || index + 1 === targets.length) {
-      sendProgress(
-        47 + Math.round(((index + 1) / Math.max(targets.length, 1)) * 7),
-        `Preparando respaldo: ${index + 1}/${targets.length}`
-      );
+  if (result.type === 'titulos') {
+    const envioRefs = await getAllDocumentRefs(db, TITLE_COLLECTIONS.envios);
+
+    for (let index = 0; index < envioRefs.length; index += 1) {
+      const envioRef = envioRefs[index];
+      const envioSnapshot = await getDoc(envioRef);
+
+      if (envioSnapshot.exists()) {
+        documents.push({
+          path: `${TITLE_COLLECTIONS.envios}/${envioRef.id}`,
+          data: serializeFirestoreValue(envioSnapshot.data())
+        });
+      }
+
+      for (const legacySubcollection of ['versiones', 'resoluciones']) {
+        const nestedSnapshot = await getDocs(collection(envioRef, legacySubcollection));
+        for (const nestedDocument of nestedSnapshot.docs) {
+          documents.push({
+            path: `${TITLE_COLLECTIONS.envios}/${envioRef.id}/${legacySubcollection}/${nestedDocument.id}`,
+            data: serializeFirestoreValue(nestedDocument.data())
+          });
+        }
+      }
+
+      if ((index + 1) % 10 === 0 || index + 1 === envioRefs.length) {
+        sendProgress(
+          43 + Math.round(((index + 1) / Math.max(envioRefs.length, 1)) * 5),
+          `Respaldando envíos actuales: ${index + 1}/${envioRefs.length}`
+        );
+      }
+    }
+
+    for (const collectionName of [TITLE_COLLECTIONS.versions, TITLE_COLLECTIONS.resolutions]) {
+      const snapshot = await getDocs(collection(db, collectionName));
+      for (const documentSnapshot of snapshot.docs) {
+        documents.push({
+          path: `${collectionName}/${documentSnapshot.id}`,
+          data: serializeFirestoreValue(documentSnapshot.data())
+        });
+      }
+    }
+  } else {
+    for (const item of result.ia) {
+      await captureDocument(doc(db, 'ia', item.id), `ia/${item.id}`);
+    }
+    for (const item of result.services) {
+      await captureDocument(doc(db, 'servicios', item.id), `servicios/${item.id}`);
+    }
+    for (const item of result.configurations) {
+      await captureDocument(doc(db, 'configuracion', item.id), `configuracion/${item.id}`);
     }
   }
 
@@ -796,6 +1012,56 @@ async function createLocalBackup(db, result, migrationId) {
   return { backupPath, total: documents.length };
 }
 
+async function cleanupLegacyTitleStructure(db) {
+  const { collection, getDocs } = require('firebase/firestore');
+  const envioRefs = await getAllDocumentRefs(db, TITLE_COLLECTIONS.envios);
+  let deletedNested = 0;
+
+  for (let index = 0; index < envioRefs.length; index += 1) {
+    const envioRef = envioRefs[index];
+    const nestedRefs = [];
+
+    for (const legacySubcollection of ['versiones', 'resoluciones']) {
+      const nestedSnapshot = await getDocs(collection(envioRef, legacySubcollection));
+      nestedRefs.push(...nestedSnapshot.docs.map((item) => item.ref));
+    }
+
+    if (nestedRefs.length) {
+      await commitDeleteRefs(db, nestedRefs);
+      deletedNested += nestedRefs.length;
+    }
+
+    if ((index + 1) % 10 === 0 || index + 1 === envioRefs.length) {
+      sendProgress(
+        49 + Math.round(((index + 1) / Math.max(envioRefs.length, 1)) * 4),
+        `Eliminando subcolecciones antiguas: ${index + 1}/${envioRefs.length}`
+      );
+    }
+  }
+
+  const existingTopLevelRefs = [
+    ...envioRefs,
+    ...(await getAllDocumentRefs(db, TITLE_COLLECTIONS.versions)),
+    ...(await getAllDocumentRefs(db, TITLE_COLLECTIONS.resolutions))
+  ];
+
+  await commitDeleteRefs(db, existingTopLevelRefs);
+
+  return {
+    deletedParentsAndTopLevel: existingTopLevelRefs.length,
+    deletedNested
+  };
+}
+
+function flattenSummary(summary) {
+  const output = {};
+  for (const [key, value] of Object.entries(summary || {})) {
+    if (value == null || typeof value === 'object') continue;
+    output[`resumen_${key}`] = value;
+  }
+  return output;
+}
+
 async function migrateToFirestore(result) {
   const { doc, setDoc, writeBatch, serverTimestamp } = require('firebase/firestore');
   const db = await getClientDatabase();
@@ -803,33 +1069,56 @@ async function migrateToFirestore(result) {
   const migrationRef = doc(db, 'migraciones', migrationId);
 
   try {
-    sendProgress(42, 'Conectando directamente con Firestore…');
+    sendProgress(40, 'Conectando directamente con Firestore…');
     await setDoc(migrationRef, {
       estado: 'EJECUTANDO',
       tipo: result.type,
       archivoOrigen: path.basename(result.sourcePath),
       proyectoDestino: TARGET_PROJECT_ID,
       iniciadoEn: serverTimestamp(),
-      resumenAnalisis: result.summary
+      ...flattenSummary(result.summary)
     }, { merge: true });
 
-    sendProgress(47, 'Creando respaldo local de los documentos que se actualizarán…');
+    sendProgress(43, 'Creando respaldo local antes de modificar Firestore…');
     const backup = await createLocalBackup(db, result, migrationId);
 
+    let cleanup = { deletedParentsAndTopLevel: 0, deletedNested: 0 };
+    if (result.type === 'titulos') {
+      sendProgress(49, 'Limpiando automáticamente la estructura anterior…');
+      cleanup = await cleanupLegacyTitleStructure(db);
+    }
+
     const writes = [];
+
     if (result.type === 'titulos') {
       for (const period of result.periods) {
-        writes.push(['periodos', period.id, { ...period, migracionId, actualizadoEn: serverTimestamp() }]);
+        writes.push([TITLE_COLLECTIONS.periods, period.id, {
+          ...period,
+          migracionId,
+          actualizadoEn: serverTimestamp()
+        }]);
       }
+
       for (const career of result.careers) {
-        writes.push(['carreras', career.id, { ...career, migracionId, actualizadoEn: serverTimestamp() }]);
+        writes.push([TITLE_COLLECTIONS.careers, career.id, {
+          ...career,
+          migracionId,
+          actualizadoEn: serverTimestamp()
+        }]);
       }
+
       for (const coordinator of result.coordinators) {
-        writes.push(['coordinadores', coordinator.id, { ...coordinator, migracionId, actualizadoEn: serverTimestamp() }]);
+        const { id, ...data } = coordinator;
+        writes.push([TITLE_COLLECTIONS.coordinators, id, {
+          ...data,
+          migracionId,
+          actualizadoEn: serverTimestamp()
+        }]);
       }
+
       for (const envio of result.envios) {
         const { id, ...data } = envio;
-        writes.push(['envios', id, {
+        writes.push([TITLE_COLLECTIONS.envios, id, {
           ...data,
           migracionId,
           archivoOrigen: path.basename(result.sourcePath),
@@ -837,12 +1126,36 @@ async function migrateToFirestore(result) {
           actualizadoEn: serverTimestamp()
         }]);
       }
+
+      for (const version of result.versions) {
+        const { id, ...data } = version;
+        writes.push([TITLE_COLLECTIONS.versions, id, {
+          ...data,
+          migracionId,
+          archivoOrigen: path.basename(result.sourcePath),
+          migradoEn: serverTimestamp()
+        }]);
+      }
+
+      for (const resolution of result.resolutions) {
+        const { id, ...data } = resolution;
+        writes.push([TITLE_COLLECTIONS.resolutions, id, {
+          ...data,
+          migracionId,
+          archivoOrigen: path.basename(result.sourcePath),
+          migradoEn: serverTimestamp()
+        }]);
+      }
+
       writes.push(['configuracion', 'general', {
         proyectoId: TARGET_PROJECT_ID,
         ultimaMigracionId: migrationId,
         ultimaMigracionEn: serverTimestamp(),
         periodoActivoId: result.periods.find((item) => item.activo)?.id || null,
-        enviosHabilitados: true
+        enviosHabilitados: true,
+        estructuraDatos: 'COLECCION_DOCUMENTO_CAMPOS',
+        coleccionVersiones: TITLE_COLLECTIONS.versions,
+        coleccionResoluciones: TITLE_COLLECTIONS.resolutions
       }]);
     } else {
       for (const provider of result.ia) {
@@ -854,6 +1167,7 @@ async function migrateToFirestore(result) {
           actualizadoEn: serverTimestamp()
         }]);
       }
+
       for (const service of result.services) {
         const { id, ...data } = service;
         writes.push(['servicios', id, {
@@ -863,6 +1177,7 @@ async function migrateToFirestore(result) {
           actualizadoEn: serverTimestamp()
         }]);
       }
+
       for (const configuration of result.configurations) {
         const { id, ...data } = configuration;
         writes.push(['configuracion', id, {
@@ -889,10 +1204,12 @@ async function migrateToFirestore(result) {
       batch.set(doc(db, collectionName, documentId), compactObject(data), { merge: true });
       pendingInBatch += 1;
       processed += 1;
+
       sendProgress(
         56 + Math.round((processed / Math.max(writes.length, 1)) * 40),
         `Subiendo ${processed}/${writes.length} documentos…`
       );
+
       if (pendingInBatch >= 400) await flush();
     }
 
@@ -903,20 +1220,24 @@ async function migrateToFirestore(result) {
       finalizadoEn: serverTimestamp(),
       tipo: result.type,
       archivoOrigen: path.basename(result.sourcePath),
-      resumen: result.summary,
       documentosProgramados: writes.length,
       respaldoLocal: backup.backupPath,
       documentosRespaldados: backup.total,
-      errores: []
+      elementosAntiguosEliminados: cleanup.deletedParentsAndTopLevel,
+      subdocumentosAntiguosEliminados: cleanup.deletedNested,
+      erroresTotal: 0,
+      ...flattenSummary(result.summary)
     }, { merge: true });
 
     sendProgress(100, 'Migración completada correctamente.', 'success');
+
     return {
       migrationId,
       migrationType: result.type,
       projectId: TARGET_PROJECT_ID,
       totalWrites: writes.length,
       backupPath: backup.backupPath,
+      cleanup,
       errors: []
     };
   } catch (error) {
@@ -931,7 +1252,7 @@ async function migrateToFirestore(result) {
     }
 
     const message = error?.code === 'permission-denied'
-      ? 'Firestore rechazó la escritura. Verifica que las reglas publicadas permitan read y write.'
+      ? 'Firestore rechazó la operación. Verifica que las reglas permitan read, write y delete.'
       : (error?.message || String(error));
 
     sendProgress(0, 'La migración no pudo completarse.', 'error');
@@ -947,6 +1268,7 @@ ipcMain.handle('excel:seleccionar', async () => {
   });
 
   if (result.canceled || !result.filePaths[0]) return null;
+
   const filePath = result.filePaths[0];
   const workbook = readWorkbook(filePath);
   const type = detectWorkbookType(workbook);
@@ -975,7 +1297,9 @@ ipcMain.handle('excel:analizar', async () => {
 
   sendProgress(8, 'Leyendo y organizando el Excel…');
   await new Promise((resolve) => setTimeout(resolve, 50));
+
   analysisResult = analyzeSelectedWorkbook(selectedExcelPath);
+
   sendProgress(100, 'Análisis completado. Ya puedes subir a Firestore.', 'success');
 
   return {
