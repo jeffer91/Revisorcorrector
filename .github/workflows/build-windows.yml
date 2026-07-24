@@ -1,0 +1,35 @@
+name: Crear aplicación Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Crear instalador y versión portable
+        run: npm run dist
+
+      - name: Publicar archivos descargables
+        uses: actions/upload-artifact@v4
+        with:
+          name: MigradorTitulos-Windows
+          path: dist/*.exe
+          if-no-files-found: error
+          retention-days: 30

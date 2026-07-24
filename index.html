@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'">
+  <title>Migrador de Títulos</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div class="brand"><span>⇄</span><div><h1>Migrador de Títulos</h1><p>Excel → Firebase de estudiantes → Firestore</p></div></div>
+    <small>v1.0.0 · aplicación local</small>
+  </header>
+
+  <main>
+    <section class="intro">
+      <div><h2>Migración controlada</h2><p>Primero analiza y valida. La base de destino solo cambia al pulsar “Migrar”.</p></div>
+      <div id="globalStatus" class="global-status">Esperando configuración</div>
+    </section>
+
+    <section class="config-grid">
+      <article class="card">
+        <div class="card-title"><b>1</b><div><h3>Respaldo Excel</h3><p>Debe contener las hojas Envios, Resoluciones y Coordinadores.</p></div></div>
+        <label>Archivo Excel</label>
+        <div class="file-row"><input id="excelPath" readonly placeholder="No seleccionado"><button data-pick="excel" data-target="excelPath">Seleccionar</button></div>
+      </article>
+
+      <article class="card">
+        <div class="card-title"><b>2</b><div><h3>Firebase de estudiantes</h3><p>Fuente oficial para relacionar cada envío.</p></div></div>
+        <label>Tipo de base</label>
+        <select id="sourceType"><option value="firestore">Cloud Firestore</option><option value="rtdb">Realtime Database</option></select>
+        <label>Colección o ruta</label><input id="sourcePath" value="estudiantes">
+        <label>Forma de búsqueda</label>
+        <select id="lookupMode"><option value="field">Buscar por un campo</option><option value="documentId">La cédula es el ID</option></select>
+        <div id="idFieldWrap"><label>Campo de identificación</label><input id="idField" value="numeroIdentificacion"></div>
+        <div id="databaseUrlWrap" class="hidden"><label>Database URL (opcional)</label><input id="databaseUrl" placeholder="https://proyecto-default-rtdb.firebaseio.com"></div>
+        <label>Cuenta de servicio de origen</label>
+        <div class="file-row"><input id="sourceCredentialPath" readonly placeholder="No seleccionada"><button data-pick="json" data-target="sourceCredentialPath">Seleccionar</button></div>
+      </article>
+
+      <article class="card">
+        <div class="card-title"><b>3</b><div><h3>Firestore de destino</h3><p>Proyecto nuevo de titulación.</p></div></div>
+        <label>Cuenta de servicio de destino</label>
+        <div class="file-row"><input id="targetCredentialPath" readonly placeholder="No seleccionada"><button data-pick="json" data-target="targetCredentialPath">Seleccionar</button></div>
+        <p class="hint">Las credenciales solo se leen desde tu equipo y no se guardan en el repositorio.</p>
+      </article>
+    </section>
+
+    <section class="actions">
+      <div class="action-buttons">
+        <button id="analyzeBtn" class="primary">Analizar datos</button>
+        <button id="reportBtn" disabled>Exportar informe</button>
+        <button id="migrateBtn" class="success" disabled>Migrar a Firestore</button>
+        <label class="check"><input id="includeMissing" type="checkbox"> Incluir no encontrados</label>
+      </div>
+      <div class="progress-box"><div><span id="progressMessage">Sin procesos activos</span><span id="progressNumber">0%</span></div><div class="track"><i id="progressBar"></i></div></div>
+    </section>
+
+    <section id="summary" class="summary hidden">
+      <div><span>Filas</span><strong id="sRows">0</strong></div>
+      <div><span>Consolidados</span><strong id="sConsolidated">0</strong></div>
+      <div class="warn"><span>Duplicados</span><strong id="sDuplicates">0</strong></div>
+      <div><span>Resoluciones</span><strong id="sResolutions">0</strong></div>
+      <div class="ok"><span>Encontrados</span><strong id="sFound">0</strong></div>
+      <div class="bad"><span>No encontrados</span><strong id="sMissing">0</strong></div>
+      <div class="warn"><span>Advertencias</span><strong id="sWarnings">0</strong></div>
+      <div class="bad"><span>Errores</span><strong id="sErrors">0</strong></div>
+    </section>
+
+    <section class="results">
+      <div class="results-head"><h3>Registros preparados</h3><div><select id="filter"><option value="all">Todos</option><option value="found">Encontrados</option><option value="missing">No encontrados</option><option value="warnings">Con advertencias</option></select><input id="search" placeholder="Buscar cédula, nombre o carrera"></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Resultado</th><th>Cédula / estudiante</th><th>Periodo</th><th>Carrera</th><th>Estado</th><th>Versiones</th><th>Resoluciones</th><th>Observaciones</th></tr></thead><tbody id="rows"><tr><td colspan="8" class="empty">Selecciona el Excel y pulsa “Analizar datos”.</td></tr></tbody></table></div>
+    </section>
+
+    <pre id="log">Aplicación iniciada. No se ha escrito ningún dato en Firebase.</pre>
+  </main>
+  <div id="toast"></div>
+  <script src="renderer.js"></script>
+</body>
+</html>

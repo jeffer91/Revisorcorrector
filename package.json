@@ -1,21 +1,67 @@
 {
-  "name": "revisorcorrector",
-  "version": "0.1.0",
-  "description": "App Electron para revisar libros de asignatura y guías de formación práctica con rúbrica, PEA y apoyo de IA.",
-  "main": "electron/rc-main.js",
-  "author": "Jefferson Villarreal",
-  "license": "MIT",
+  "name": "migrador-titulos",
+  "version": "1.0.0",
+  "description": "Migrador local de datos de titulación desde Excel hacia Firestore.",
+  "main": "main.js",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "dev": "electron .",
-    "check": "node -e \"require('./src/rc-config'); require('./src/rc-state'); require('./src/rc-document-parser'); require('./src/rc-document-classifier'); require('./src/rc-structure-analyzer'); require('./src/rc-pea-analyzer'); require('./src/rc-rubric-engine'); require('./src/rc-ai-reviewer'); require('./src/rc-report-builder'); require('./src/rc-export-service'); require('./src/rc-file-service'); console.log('Revisorcorrector OK')\""
+    "dist": "electron-builder --win nsis portable"
   },
   "dependencies": {
-    "mammoth": "^1.8.0",
-    "pdf-parse": "^1.1.1"
+    "firebase-admin": "13.4.0",
+    "xlsx": "0.18.5"
   },
   "devDependencies": {
-    "electron": "^31.7.7"
+    "electron": "43.2.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "ec.edu.itsqmet.migrador.titulos",
+    "productName": "Migrador de Títulos",
+    "asar": true,
+    "files": [
+      "main.js",
+      "migration.js",
+      "normalize.js",
+      "firebase.js",
+      "preload.js",
+      "index.html",
+      "renderer.js",
+      "styles.css",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Migrador de Títulos",
+      "artifactName": "MigradorTitulos-Setup-${version}-${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "MigradorTitulos-Portable-${version}-${arch}.${ext}"
+    }
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
