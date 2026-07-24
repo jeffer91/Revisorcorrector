@@ -1,7 +1,7 @@
 {
   "name": "migrador-titulos",
-  "version": "3.2.0",
-  "description": "Migración, consulta y exportación de Firestore titulos-ec2fa.",
+  "version": "3.3.0",
+  "description": "Migración, consulta, corrección y exportación de Firestore titulos-ec2fa.",
   "main": "launcher.js",
   "private": true,
   "scripts": {
@@ -24,6 +24,7 @@
       "launcher.js",
       "main.js",
       "firebase_reader.js",
+      "firebase_corrections.js",
       "preload.js",
       "index.html",
       "package.json"
