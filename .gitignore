@@ -4,8 +4,8 @@ dist/
 *.json
 !package.json
 !.github/**/*.json
-credenciales/
-reportes/
-backups/
+firebase-admin*.json
+service-account*.json
+backups_migracion/
 .DS_Store
 Thumbs.db
