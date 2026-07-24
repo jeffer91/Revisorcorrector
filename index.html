@@ -60,7 +60,13 @@
     .target strong { display: block; color: #fff; font-size: 15px; margin-top: 3px; }
 
     main { width: min(1220px, calc(100% - 48px)); margin: 30px auto 46px; }
-    .intro { display: flex; justify-content: space-between; gap: 18px; align-items: end; margin-bottom: 18px; }
+    .intro {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
     .intro h2 { margin: 0 0 7px; font-size: 28px; }
     .intro p { margin: 0; color: var(--muted); line-height: 1.5; }
     .step-pill {
@@ -102,8 +108,18 @@
     }
     .file-icon { font-size: 28px; }
     .file-data { min-width: 0; }
-    .file-data strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .file-data span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .file-data strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .file-data span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
 
     button {
       border: 0;
@@ -116,15 +132,45 @@
     }
     button:hover:not(:disabled) { transform: translateY(-1px); }
     button:disabled { opacity: .45; cursor: not-allowed; }
-    .primary { color: white; background: var(--navy); box-shadow: 0 8px 18px rgba(11,52,88,.18); }
+    .primary {
+      color: white;
+      background: var(--navy);
+      box-shadow: 0 8px 18px rgba(11,52,88,.18);
+    }
     .secondary { color: var(--navy); background: var(--blue-soft); }
-    .success { color: white; background: var(--green); box-shadow: 0 8px 18px rgba(23,134,91,.18); }
-    .actions { display: flex; flex-direction: column; gap: 10px; min-width: 200px; }
+    .success {
+      color: white;
+      background: var(--green);
+      box-shadow: 0 8px 18px rgba(23,134,91,.18);
+    }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 200px;
+    }
 
     .progress-wrap { margin-top: 18px; }
-    .progress-meta { display: flex; justify-content: space-between; gap: 15px; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
-    .progress { height: 9px; border-radius: 999px; overflow: hidden; background: #e8eef4; }
-    .progress > div { height: 100%; width: 0; background: var(--navy-2); transition: width .22s ease, background .22s ease; }
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .progress {
+      height: 9px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #e8eef4;
+    }
+    .progress > div {
+      height: 100%;
+      width: 0;
+      background: var(--navy-2);
+      transition: width .22s ease, background .22s ease;
+    }
 
     #results { display: none; margin-top: 22px; }
     .metrics {
@@ -133,34 +179,115 @@
       gap: 14px;
       margin-bottom: 18px;
     }
-    .metric { padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: #fbfdff; }
-    .metric span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    .metric {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fbfdff;
+    }
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
     .metric strong { font-size: 26px; }
 
-    .collections { display: flex; flex-wrap: wrap; gap: 9px; margin: 13px 0 22px; }
-    .collection-chip { background: var(--blue-soft); color: var(--navy); border-radius: 999px; padding: 8px 12px; font-size: 13px; font-weight: 650; }
-    .structure-note { margin: 0 0 18px; padding: 13px 15px; border-radius: 13px; background: var(--green-soft); color: var(--green); line-height: 1.5; }
-    .sensitive-note { margin: 0 0 18px; padding: 13px 15px; border-radius: 13px; background: var(--amber-soft); color: var(--amber); line-height: 1.5; }
+    .collections {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin: 13px 0 22px;
+    }
+    .collection-chip {
+      background: var(--blue-soft);
+      color: var(--navy);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .structure-note,
+    .sensitive-note {
+      margin: 0 0 18px;
+      padding: 13px 15px;
+      border-radius: 13px;
+      line-height: 1.5;
+    }
+    .structure-note { background: var(--green-soft); color: var(--green); }
+    .sensitive-note { background: var(--amber-soft); color: var(--amber); }
 
-    .result-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 18px; }
-    .subpanel { border: 1px solid var(--line); border-radius: 17px; overflow: hidden; }
-    .subpanel h4 { margin: 0; padding: 15px 17px; background: #f8fbfe; border-bottom: 1px solid var(--line); }
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1.7fr 1fr;
+      gap: 18px;
+    }
+    .subpanel {
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      overflow: hidden;
+    }
+    .subpanel h4 {
+      margin: 0;
+      padding: 15px 17px;
+      background: #f8fbfe;
+      border-bottom: 1px solid var(--line);
+    }
     .table-wrap { max-height: 360px; overflow: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th, td { text-align: left; padding: 11px 13px; border-bottom: 1px solid #edf1f5; vertical-align: top; }
-    th { position: sticky; top: 0; background: #fff; color: var(--muted); z-index: 1; }
+    th, td {
+      text-align: left;
+      padding: 11px 13px;
+      border-bottom: 1px solid #edf1f5;
+      vertical-align: top;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background: #fff;
+      color: var(--muted);
+      z-index: 1;
+    }
     td { max-width: 300px; }
-    .badge { display: inline-block; border-radius: 999px; padding: 5px 8px; font-size: 11px; font-weight: 750; background: var(--blue-soft); color: var(--navy); }
-    .warnings { padding: 14px 17px; max-height: 360px; overflow: auto; }
-    .warning { margin-bottom: 9px; padding: 10px 12px; border-radius: 11px; background: var(--amber-soft); color: var(--amber); font-size: 12px; line-height: 1.4; }
-    .ok-box, .error-box { margin-top: 18px; border-radius: 14px; padding: 14px 16px; display: none; line-height: 1.5; }
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 750;
+      background: var(--blue-soft);
+      color: var(--navy);
+    }
+    .warnings {
+      padding: 14px 17px;
+      max-height: 360px;
+      overflow: auto;
+    }
+    .warning {
+      margin-bottom: 9px;
+      padding: 10px 12px;
+      border-radius: 11px;
+      background: var(--amber-soft);
+      color: var(--amber);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .ok-box,
+    .error-box {
+      margin-top: 18px;
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: none;
+      line-height: 1.5;
+    }
     .ok-box { background: var(--green-soft); color: var(--green); }
     .error-box { background: var(--red-soft); color: var(--red); }
 
     @media (max-width: 900px) {
       header { padding: 16px 20px; }
       main { width: min(100% - 26px, 1220px); }
-      .upload-panel, .result-grid { grid-template-columns: 1fr; }
+      .upload-panel,
+      .result-grid { grid-template-columns: 1fr; }
       .actions { flex-direction: row; min-width: 0; }
       .actions button { flex: 1; }
       .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -183,7 +310,7 @@
     <div class="intro">
       <div>
         <h2>Migración automática</h2>
-        <p>Selecciona directamente el respaldo de títulos o el Excel de claves de IA. Cada archivo se procesa por separado.</p>
+        <p>Selecciona el respaldo de títulos o el Excel de claves de IA. La app separa cada tipo en colecciones principales.</p>
       </div>
       <div class="step-pill" id="stepPill">Paso 1 de 3</div>
     </div>
@@ -191,7 +318,8 @@
     <section class="panel upload-panel">
       <div>
         <h3>Archivo Excel</h3>
-        <p>La app identifica el tipo de archivo y muestra exactamente qué colecciones va a crear o actualizar.</p>
+        <p>La app identifica el archivo y muestra las colecciones que se crearán o actualizarán.</p>
+
         <div class="file-box">
           <div class="file-icon">📄</div>
           <div class="file-data">
@@ -199,11 +327,16 @@
             <span id="fileDetail">Puedes elegir Claves.xlsx o RESPALDO TITULOS APP.xlsx.</span>
           </div>
         </div>
+
         <div class="progress-wrap">
-          <div class="progress-meta"><span id="progressMessage">Esperando archivo</span><span id="progressPercent">0%</span></div>
+          <div class="progress-meta">
+            <span id="progressMessage">Esperando archivo</span>
+            <span id="progressPercent">0%</span>
+          </div>
           <div class="progress"><div id="progressBar"></div></div>
         </div>
       </div>
+
       <div class="actions">
         <button class="secondary" id="selectButton">1. Seleccionar Excel</button>
         <button class="primary" id="analyzeButton" disabled>2. Analizar</button>
@@ -232,6 +365,7 @@
             </table>
           </div>
         </div>
+
         <div class="subpanel">
           <h4>Advertencias</h4>
           <div class="warnings" id="warnings"></div>
@@ -241,7 +375,14 @@
   </main>
 
   <script>
-    const state = { selected: false, analyzed: false, busy: false, type: null, typeLabel: null };
+    const state = {
+      selected: false,
+      analyzed: false,
+      busy: false,
+      type: null,
+      typeLabel: null
+    };
+
     const $ = (id) => document.getElementById(id);
 
     function showError(message) {
@@ -282,36 +423,6 @@
             : '#124d7c';
     }
 
-    function renderAnalysis(data) {
-      $('results').style.display = 'block';
-      $('resultTitle').textContent = `Resultado: ${data.typeLabel}`;
-      $('metrics').innerHTML = data.metrics.map((item) => `
-        <div class="metric">
-          <span>${escapeHtml(item.label)}</span>
-          <strong>${escapeHtml(item.value)}</strong>
-        </div>`).join('');
-      $('collections').innerHTML = data.collections
-        .map((item) => `<span class="collection-chip">${escapeHtml(item.name)}: ${escapeHtml(item.count)}</span>`)
-        .join('');
-
-      if (data.type === 'titulos') {
-        $('modeNote').innerHTML = '<div class="structure-note"><strong>Estructura simple:</strong> cada estudiante queda en <code>envios → documento → campos</code>. Los tres títulos, el título elegido, el título corregido, el título final y los historiales quedan dentro del mismo documento. No se crearán subcolecciones.</div>';
-        $('previewTitle').textContent = 'Vista previa de envíos';
-      } else {
-        $('modeNote').innerHTML = '<div class="sensitive-note"><strong>Claves incluidas:</strong> se subirán los campos <code>credencial</code>, <code>secreto</code> y los valores de configuración exactamente como aparecen en el Excel.</div>';
-        $('previewTitle').textContent = 'Vista previa de proveedores de IA';
-      }
-
-      $('previewHead').innerHTML = data.previewHeaders
-        .map((header) => `<th>${escapeHtml(header)}</th>`)
-        .join('');
-      $('previewBody').innerHTML = data.previewRows.map((row) => `
-        <tr>${row.map((value, index) => `<td>${index === row.length - 1 ? `<span class="badge">${escapeHtml(value)}</span>` : escapeHtml(value)}</td>`).join('')}</tr>`).join('');
-      $('warnings').innerHTML = data.warnings.length
-        ? data.warnings.map((warning) => `<div class="warning">${escapeHtml(warning)}</div>`).join('')
-        : '<div style="color:#17865b;padding:8px 0">No se encontraron advertencias importantes.</div>';
-    }
-
     function escapeHtml(value) {
       return String(value ?? '')
         .replaceAll('&', '&amp;')
@@ -321,18 +432,88 @@
         .replaceAll("'", '&#039;');
     }
 
-    window.migrador.onProgreso(({ percent, message, tone }) => setProgress(percent, message, tone));
+    function renderAnalysis(data) {
+      $('results').style.display = 'block';
+      $('resultTitle').textContent = `Resultado: ${data.typeLabel}`;
+
+      $('metrics').innerHTML = data.metrics.map((item) => `
+        <div class="metric">
+          <span>${escapeHtml(item.label)}</span>
+          <strong>${escapeHtml(item.value)}</strong>
+        </div>
+      `).join('');
+
+      $('collections').innerHTML = data.collections
+        .map((item) => `
+          <span class="collection-chip">
+            ${escapeHtml(item.name)}: ${escapeHtml(item.count)}
+          </span>
+        `)
+        .join('');
+
+      if (data.type === 'titulos') {
+        $('modeNote').innerHTML = `
+          <div class="structure-note">
+            <strong>Estructura final:</strong>
+            cada grupo queda únicamente como
+            <code>colección → documento → campos</code>.
+            Las versiones estarán en <code>versiones_envio</code> y las correcciones en
+            <code>resoluciones</code>. La app respaldará y eliminará automáticamente las
+            subcolecciones antiguas antes de volver a cargar los datos.
+          </div>
+        `;
+        $('previewTitle').textContent = 'Vista previa de envíos';
+      } else {
+        $('modeNote').innerHTML = `
+          <div class="sensitive-note">
+            <strong>Claves incluidas:</strong>
+            se subirán los campos <code>credencial</code>, <code>secreto</code> y los
+            valores de configuración exactamente como aparecen en el Excel.
+          </div>
+        `;
+        $('previewTitle').textContent = 'Vista previa de proveedores de IA';
+      }
+
+      $('previewHead').innerHTML = data.previewHeaders
+        .map((header) => `<th>${escapeHtml(header)}</th>`)
+        .join('');
+
+      $('previewBody').innerHTML = data.previewRows.map((row) => `
+        <tr>
+          ${row.map((value, index) => `
+            <td>
+              ${index === row.length - 1
+                ? `<span class="badge">${escapeHtml(value)}</span>`
+                : escapeHtml(value)}
+            </td>
+          `).join('')}
+        </tr>
+      `).join('');
+
+      $('warnings').innerHTML = data.warnings.length
+        ? data.warnings
+            .map((warning) => `<div class="warning">${escapeHtml(warning)}</div>`)
+            .join('')
+        : '<div style="color:#17865b;padding:8px 0">No se encontraron advertencias importantes.</div>';
+    }
+
+    window.migrador.onProgreso(({ percent, message, tone }) => {
+      setProgress(percent, message, tone);
+    });
 
     $('selectButton').addEventListener('click', async () => {
       clearMessages();
+
       try {
         setBusy(true);
         const result = await window.migrador.seleccionarExcel();
         if (!result) return;
+
         state.selected = true;
         state.analyzed = false;
         state.type = result.type;
         state.typeLabel = result.typeLabel;
+
         $('fileName').textContent = result.sourceName;
         $('fileDetail').textContent = `${result.typeLabel} reconocido correctamente.`;
         $('results').style.display = 'none';
@@ -347,13 +528,16 @@
 
     $('analyzeButton').addEventListener('click', async () => {
       clearMessages();
+
       try {
         setBusy(true);
         setProgress(3, 'Iniciando análisis…');
+
         const data = await window.migrador.analizar();
         state.analyzed = true;
         state.type = data.type;
         state.typeLabel = data.typeLabel;
+
         renderAnalysis(data);
         $('stepPill').textContent = 'Paso 3 de 3';
         showOk(`${data.typeLabel} analizado y listo para subir.`);
@@ -368,16 +552,30 @@
 
     $('uploadButton').addEventListener('click', async () => {
       clearMessages();
+
       const detail = state.type === 'claves'
         ? 'Se subirán también las credenciales y secretos del Excel.'
-        : 'Los títulos y resoluciones quedarán como campos del documento, sin subcolecciones.';
-      const accepted = confirm(`Se crearán o actualizarán las colecciones de Firestore en titulos-ec2fa. ${detail} No se eliminarán documentos. ¿Continuar?`);
+        : 'La app creará un respaldo, eliminará la estructura antigua de envíos y generará colecciones principales sin subcolecciones.';
+
+      const accepted = confirm(
+        `Se modificará Firestore en titulos-ec2fa. ${detail} ¿Continuar?`
+      );
+
       if (!accepted) return;
 
       try {
         setBusy(true);
         const result = await window.migrador.migrar();
-        showOk(`Migración ${result.migrationId} completada. Se realizaron ${result.totalWrites} escrituras. Respaldo local: ${result.backupPath}`);
+
+        const cleanupText = state.type === 'titulos'
+          ? ` Se eliminaron ${result.cleanup.deletedNested} documentos de subcolecciones antiguas y ${result.cleanup.deletedParentsAndTopLevel} documentos de la estructura anterior.`
+          : '';
+
+        showOk(
+          `Migración ${result.migrationId} completada. ` +
+          `Se realizaron ${result.totalWrites} escrituras.${cleanupText} ` +
+          `Respaldo local: ${result.backupPath}`
+        );
       } catch (error) {
         setProgress(0, 'La migración no pudo completarse', 'error');
         showError(error.message || String(error));
