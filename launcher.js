@@ -4,6 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const Module = require('module');
 
+require('./firebase_reader');
+
 const mainPath = path.join(__dirname, 'main.js');
 let source = fs.readFileSync(mainPath, 'utf8');
 
