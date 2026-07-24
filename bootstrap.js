@@ -78,8 +78,10 @@ async function migrateToFirestore(result) {
         backupDocuments.push({ id: envio.id, data: serializeFirestoreValue(snapshot.data()) });
       }
       if ((index + 1) % 10 === 0 || index + 1 === result.envios.length) {
-        sendProgress(47 + Math.round(((index + 1) / Math.max(result.envios.length, 1)) * 7),
-          'Preparando respaldo: ' + (index + 1) + '/' + result.envios.length);
+        sendProgress(
+          47 + Math.round(((index + 1) / Math.max(result.envios.length, 1)) * 7),
+          'Preparando respaldo: ' + (index + 1) + '/' + result.envios.length
+        );
       }
     }
 
@@ -110,8 +112,10 @@ async function migrateToFirestore(result) {
       batch.set(reference, data, { merge: true });
       pendingInBatch += 1;
       queued += 1;
-      sendProgress(56 + Math.round((queued / Math.max(totalWrites, 1)) * 40),
-        'Subiendo ' + queued + '/' + totalWrites + ' documentos…');
+      sendProgress(
+        56 + Math.round((queued / Math.max(totalWrites, 1)) * 40),
+        'Subiendo ' + queued + '/' + totalWrites + ' documentos…'
+      );
       if (pendingInBatch >= 400) await flush();
     };
 
@@ -217,7 +221,7 @@ async function migrateToFirestore(result) {
         error: error?.message || String(error)
       }, { merge: true });
     } catch (_secondaryError) {
-      // Ignorar: el error original es el importante.
+      // Se conserva el error original.
     }
 
     const message = error?.code === 'permission-denied'
@@ -229,17 +233,27 @@ async function migrateToFirestore(result) {
 }
 `;
 
-  const migrationPattern = /async function migrateToFirestore\(result(?:,\s*explicitAccountPath\s*=\s*null)?\)\s*\{[\s\S]*?\n\}\n\nipcMain\.handle\('excel:seleccionar'/m;
-  if (!migrationPattern.test(code)) {
+  const startMarker = 'async function migrateToFirestore(result) {';
+  const endMarker = "ipcMain.handle('excel:seleccionar'";
+  const startIndex = code.indexOf(startMarker);
+  const endIndex = code.indexOf(endMarker, startIndex);
+
+  if (startIndex === -1 || endIndex === -1 || endIndex <= startIndex) {
     throw new Error('No se encontró el bloque de migración de main.js. Actualiza el repositorio e inténtalo otra vez.');
   }
 
-  let result = code.replace(
-    migrationPattern,
-    migrationCode.trim() + "\n\nipcMain.handle('excel:seleccionar'"
-  );
+  let result = code.slice(0, startIndex) + migrationCode.trim() + '\n\n' + code.slice(endIndex);
 
-  const handlerPattern = /ipcMain\.handle\('firebase:migrar', async \(\) => \{[\s\S]*?\n\}\);/m;
+  const handlerStart = result.indexOf("ipcMain.handle('firebase:migrar'");
+  if (handlerStart === -1) {
+    throw new Error('No se encontró el botón de subida de main.js. Actualiza el repositorio e inténtalo otra vez.');
+  }
+
+  const handlerEnd = result.indexOf('\n});', handlerStart);
+  if (handlerEnd === -1) {
+    throw new Error('No se pudo cerrar el botón de subida de main.js.');
+  }
+
   const handlerReplacement = [
     "ipcMain.handle('firebase:migrar', async () => {",
     "  if (!analysisResult) throw new Error('Primero pulsa Analizar.');",
@@ -247,11 +261,7 @@ async function migrateToFirestore(result) {
     "});"
   ].join('\n');
 
-  if (!handlerPattern.test(result)) {
-    throw new Error('No se encontró el botón de subida de main.js. Actualiza el repositorio e inténtalo otra vez.');
-  }
-
-  return result.replace(handlerPattern, handlerReplacement);
+  return result.slice(0, handlerStart) + handlerReplacement + result.slice(handlerEnd + 4);
 }
 
 function buildMenu() {
